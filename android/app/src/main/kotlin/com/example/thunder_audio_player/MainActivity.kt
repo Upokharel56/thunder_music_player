@@ -1,5 +1,14 @@
 package com.example.thunder_audio_player
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
+import android.os.Bundle
 
-class MainActivity: FlutterActivity()
+import com.ryanheise.audioservice.AudioServiceActivity;
+
+
+class MainActivity : AudioServiceActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Additional initialization if needed
+    }
+}

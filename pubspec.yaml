@@ -44,6 +44,8 @@ dependencies:
   volume_controller: ^2.0.8
   logger: ^2.4.0
   audio_session: ^0.1.21
+  just_audio_background: ^0.0.1-beta.13
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:

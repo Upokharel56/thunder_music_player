@@ -191,10 +191,12 @@ class MusicPlayer extends StatelessWidget
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         IconButton(
-          onPressed: () {},
-          icon: const Icon(
-            Icons.shuffle,
-            color: whiteColor,
+          onPressed: () {
+            controller.toggleShuffle();
+          },
+          icon: Icon(
+            controller.isShuffleActive.value ? Icons.shuffle : Icons.shuffle,
+            color: controller.isShuffleActive.value ? fadedWhite : whiteColor,
           ),
         ),
         IconButton(
@@ -231,9 +233,13 @@ class MusicPlayer extends StatelessWidget
           ),
         ),
         IconButton(
-          onPressed: () {},
-          icon: const Icon(
-            Icons.repeat,
+          onPressed: () {
+            controller.toggleRepeat();
+          },
+          icon: Icon(
+            controller.isRepeatActive.value
+                ? Icons.repeat
+                : Icons.repeat_one_sharp,
             color: whiteColor,
           ),
         ),

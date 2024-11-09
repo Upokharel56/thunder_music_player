@@ -18,14 +18,14 @@ class _NoPermissionPageState extends State<NoPermissionPage> {
           child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
+          const Text(
             "No Permission Granted",
             style: TextStyle(color: whiteColor, fontSize: 20),
           ),
-          SizedBox(
+          const SizedBox(
             height: 20,
           ),
-          Text(
+          const Text(
             "Please grant storage permission to continue",
             style: TextStyle(color: whiteColor, fontSize: 16),
           ),
@@ -36,7 +36,7 @@ class _NoPermissionPageState extends State<NoPermissionPage> {
                   Navigator.pushReplacementNamed(context, "/");
                 }
               },
-              child: Text(
+              child: const Text(
                 "Grant Permission",
                 style: TextStyle(color: buttonColor, fontSize: 16),
               ))

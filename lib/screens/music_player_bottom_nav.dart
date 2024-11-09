@@ -228,10 +228,24 @@ mixin MusicPlayerBottomNav implements MiniPlayer {
   }
 
   Widget _build_lyrics_state() {
-    return const Center(
-      child: Text("Inside Lyrics",
-          style: TextStyle(color: whiteColor, fontSize: 18)),
-    );
+    return Obx(() {
+      return ListView.builder(
+        itemCount: controller.lyricsLines.length,
+        itemBuilder: (context, index) {
+          final line = controller.lyricsLines[index];
+          final isCurrentLine = index == controller.currentLineIndex.value;
+
+          return Text(
+            line['lyrics'],
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: isCurrentLine ? FontWeight.bold : FontWeight.normal,
+              color: isCurrentLine ? Colors.blueAccent : Colors.white,
+            ),
+          );
+        },
+      );
+    });
   }
 
   Widget _build_details_state() {
