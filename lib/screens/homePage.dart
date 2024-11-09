@@ -98,31 +98,33 @@ class _HomepageState extends State<Homepage> {
             style: const TextStyle(fontSize: 16, color: whiteColor),
           ),
           subtitle: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: FittedBox(
-                  clipBehavior: Clip.antiAlias,
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    song.artist ?? "Unknown",
-                    maxLines: 1,
+                flex: 2,
+                child: Text(
+                  "< ${song.artist ?? "Unknown"} >",
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: whiteColor,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: whiteColor),
                   ),
                 ),
               ),
+              const SizedBox(width: 3),
               Expanded(
+                  flex: 1,
                   child: FittedBox(
-                clipBehavior: Clip.antiAlias,
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  _getFormattedDuration(song.duration),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: whiteColor),
-                ),
-              ))
+                    clipBehavior: Clip.antiAlias,
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _getFormattedDuration(song.duration),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: whiteColor),
+                    ),
+                  ))
             ],
           ),
           leading: QueryArtworkWidget(

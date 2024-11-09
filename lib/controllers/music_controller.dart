@@ -1,28 +1,16 @@
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
-import 'package:volume_controller/volume_controller.dart';
+import 'package:thunder_audio_player/utils/volume_controls.dart';
+
 import '../utils/loggers.dart';
 
-class MusicController extends GetxController {
+class MusicController extends GetxController with VolumeControls {
   final OnAudioQuery _audioQuery = OnAudioQuery();
   final AudioPlayer _audioPlayer = AudioPlayer();
   final List<SongModel> songs = <SongModel>[].obs; // Observable list of songs
   final RxInt currentIndex = 0.obs; // Current index of the song
   final RxBool isPlaying = false.obs; // Track if audio is playing
-
-  final RxString currentSongName =
-      ''.obs; //NAme of the Current song being played
-  final RxString currentArtist =
-      ''.obs; //Name of the artist of the current song being played
-  final RxString currentAlbum =
-      ''.obs; //Name of the album of the current song being played
-
-  // Publicly accessible variables for the UI
-  // List<SongModel> get songs => _songs;
-  // int get currentIndex => _currentIndex.value;
-  // bool get isPlaying => _isPlaying.value;
-  var currentSong;
 
 //Duration variables of player being played
   var duration = ''.obs;
@@ -31,111 +19,10 @@ class MusicController extends GetxController {
   var max = 0.0.obs;
   var value = 0.0.obs;
 
-  // Volume controller
-  RxDouble volume = 0.5.obs; // Observable to track volume level
-  RxBool isMuted = false.obs; // Observable to track if volume is muted
-  RxDouble volumeBeforeMute = 0.5.obs; // Observable to store volume before mute
-
-  final VolumeController volumeController = VolumeController();
-
   @override
   void onInit() {
     super.onInit();
-
-    try {
-      // Initialize volume and listen to volume changes
-      volumeController.listener((newVolume) {
-        volume.value = newVolume;
-        if (newVolume == 0) {
-          isMuted.value = true;
-        } else {
-          isMuted.value = false;
-        }
-      });
-
-      log("Volume initialized successfully and listener added: ${volume.value}");
-    } catch (e) {
-      err("Error while initializing volume : \n $e");
-    }
-
-    try {
-      // Set initial volume
-      volumeController.getVolume().then((initialVolume) {
-        volume.value = initialVolume;
-
-        if (initialVolume == 0) {
-          isMuted.value = true;
-        }
-      });
-    } catch (e) {
-      err("Error while getting volume : \n $e");
-    }
-  }
-
-// Set volume to a specific level
-  void setVolume(double newVolume) {
-    try {
-      volume.value = newVolume;
-      volumeController.setVolume(newVolume);
-      if (newVolume > 0) {
-        isMuted.value = false; // Set unmuted if volume is above zero
-      }
-    } catch (e) {
-      err("Error while setting volume : \n $e");
-    }
-  }
-
-  // Get the current volume level
-  Future<double> getVolume() async {
-    try {
-      volume.value = await volumeController.getVolume();
-      return volume.value;
-    } catch (e) {
-      err("Error while getting volume : \n $e");
-      return 0.0;
-    }
-  }
-
-  // Mute volume and store the current volume
-  void muteVolume() {
-    try {
-      if (!isMuted.value) {
-        volumeBeforeMute.value = volume.value; // Store current volume
-        setVolume(0); // Set volume to 0 to mute
-        isMuted.value = true;
-      }
-      log("Volume muted successfully");
-    } catch (e) {
-      err("Error while muting volume : \n $e");
-    }
-  }
-
-  // Unmute volume by restoring to previous volume level
-  void unmuteVolume() {
-    try {
-      if (isMuted.value) {
-        setVolume(volumeBeforeMute.value); // Restore previous volume
-        isMuted.value = false;
-      }
-      log("Volume unmuted successfully with volume: ${volume.value}");
-    } catch (e) {
-      err("Error while unmuting volume : \n $e");
-    }
-  }
-
-  void toggleMute() {
-    if (isMuted.value) {
-      unmuteVolume();
-    } else {
-      muteVolume();
-    }
-  }
-
-  updateCurrentDetails(newSong) {
-    currentSong = songs[currentIndex.value];
-    currentSongName.value = currentSong.title!;
-    currentArtist.value = currentSong.artist!;
-    currentAlbum.value = currentSong.album!;
+    _initializePlayer();
   }
 
   setSongs(List<SongModel> songs) {

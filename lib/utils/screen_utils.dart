@@ -28,11 +28,11 @@ class ScreenUtils {
             children: [
               Text(
                 song.artist ?? "Unknown",
-                style: TextStyle(fontSize: 12, color: whiteColor),
+                style: const TextStyle(fontSize: 12, color: whiteColor),
               ),
               Text(
                 getFormattedDuration(song.duration),
-                style: TextStyle(fontSize: 12, color: whiteColor),
+                style: const TextStyle(fontSize: 12, color: whiteColor),
               ),
             ],
           ),
