@@ -8,6 +8,7 @@
     android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission
     android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 
     <application
         android:label="thunder_audio_player"

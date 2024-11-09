@@ -5,9 +5,11 @@ import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/controllers/music_controller.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/screens/music_player_bottom_nav.dart';
+import '../utils/loggers.dart';
 
 class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
   final List<SongModel> data;
+  @override
   final MusicController controller = Get.find<MusicController>();
 
   MusicPlayer({super.key, required this.data});
@@ -15,9 +17,7 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        foregroundColor: whiteColor,
-      ),
+      appBar: _buildPlayerAppBar(),
       body: _build_body(),
       bottomNavigationBar: buildBottomNavigationBar(),
     );
@@ -28,11 +28,11 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
       padding: const EdgeInsets.all(8.0),
       child: Column(
         children: [
-          Container(
+          SizedBox(
             height: 450,
             child: _buildArtworkDetails(),
           ),
-          const Expanded(child: SizedBox()),
+          const Spacer(),
           _buildAudioController(),
         ],
       ),
@@ -40,17 +40,15 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
   }
 
   Widget _buildArtworkDetails() {
-    return Expanded(
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.all(5),
-        decoration: const BoxDecoration(color: bgColor),
-        child: Column(
-          children: [
-            Obx(() => _buildArtworkContainer()),
-            _buildAudioDetails(),
-          ],
-        ),
+    return Container(
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(5),
+      decoration: const BoxDecoration(color: bgColor),
+      child: Column(
+        children: [
+          Obx(() => _buildArtworkContainer()),
+          _buildAudioDetails(),
+        ],
       ),
     );
   }
@@ -61,6 +59,7 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
       width: controller.isPlaying.value ? 300 : 230,
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(35)),
+        color: blackColor,
       ),
       child: QueryArtworkWidget(
         id: data[controller.currentIndex.value].id,
@@ -69,6 +68,7 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
         // artworkWidth: 330,
         type: ArtworkType.AUDIO,
         artworkFit: BoxFit.contain,
+        // artworkColor: blackColor,
         nullArtworkWidget: const Icon(
           Icons.music_note,
           size: 100,
@@ -141,7 +141,9 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
           ),
         ),
         IconButton(
-          onPressed: () {},
+          onPressed: () {
+            controller.setVolume(controller.volume.value);
+          },
           icon: const Icon(
             Icons.volume_up_rounded,
             color: whiteColor,
@@ -156,7 +158,7 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
     return Row(
       children: [
         Text(controller.position.value,
-            style: TextStyle(fontSize: 12, color: whiteColor)),
+            style: const TextStyle(fontSize: 12, color: whiteColor)),
         Expanded(
           child: Slider(
             thumbColor: sliderColor,
@@ -171,7 +173,7 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
           ),
         ),
         Text(controller.duration.value,
-            style: TextStyle(fontSize: 12, color: whiteColor)),
+            style: const TextStyle(fontSize: 12, color: whiteColor)),
       ],
     );
   }
@@ -200,25 +202,14 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
           ),
         ),
         IconButton(
-          onPressed: () {
-            if (controller.isPlaying.value) {
-              controller.pause();
-            } else {
-              controller.play();
-            }
-          },
-          icon: controller.isPlaying.value
-              ? const Icon(
-                  Icons.pause,
-                  size: 55,
-                  color: whiteColor,
-                )
-              : const Icon(
-                  Icons.play_arrow,
-                  size: 55,
-                  color: whiteColor,
-                ),
-        ),
+            onPressed: () {
+              controller.togglePlay();
+            },
+            icon: Icon(
+              controller.isPlaying.value ? Icons.pause : Icons.play_arrow,
+              size: 55,
+              color: whiteColor,
+            )),
         IconButton(
           onPressed: () {
             if (controller.currentIndex.value < data.length - 1) {
@@ -237,6 +228,39 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
             Icons.repeat,
             color: whiteColor,
           ),
+        ),
+      ],
+    );
+  }
+
+  AppBar _buildPlayerAppBar() {
+    return AppBar(
+      foregroundColor: whiteColor,
+      title: const Text('Thunder Storm'),
+      actions: [_buildAppBarActionBtns()],
+    );
+  }
+
+  Widget _buildAppBarActionBtns() {
+    return Row(
+      children: [
+        Obx(() => IconButton(
+              onPressed: () {
+                // Single toggle function instead of separate mute/unmute
+                controller.toggleMute();
+              },
+              icon: Icon(
+                controller.isMuted.value ? Icons.volume_off : Icons.volume_up,
+                color: whiteColor,
+              ),
+            )),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.info_outline, color: whiteColor),
+        ),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.more_vert, color: whiteColor),
         ),
       ],
     );

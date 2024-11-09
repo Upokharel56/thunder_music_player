@@ -10,3 +10,4 @@ const buttonColor = Color(0xff60E95D);
 const bgDarkColor = Color(0xff070B11);
 const blackColor = Colors.black;
 const subIconsSize = 25.0;
+const lightBlack = Color.fromARGB(255, 24, 26, 37);

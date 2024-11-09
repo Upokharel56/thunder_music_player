@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/consts/styles.dart';
 import 'package:thunder_audio_player/consts/utils.dart';
 import 'package:thunder_audio_player/screens/homePage.dart';
@@ -43,7 +42,7 @@ class NoPermissionScreen extends StatelessWidget {
       title: 'Permission Denied',
       debugShowCheckedModeBanner: false,
       theme: myTheme,
-      home: NoPermissionPage(),
+      home: const NoPermissionPage(),
     );
   }
 }

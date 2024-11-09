@@ -41,6 +41,8 @@ dependencies:
   permission_handler: ^11.3.1
   on_audio_query: ^2.9.0
   auto_size_text: ^3.0.0
+  volume_controller: ^2.0.8
+  logger: ^2.4.0
 
 dev_dependencies:
   flutter_test:

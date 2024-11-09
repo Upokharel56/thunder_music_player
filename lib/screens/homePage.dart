@@ -95,18 +95,34 @@ class _HomepageState extends State<Homepage> {
           tileColor: bgColor,
           title: Text(
             song.title,
+            style: const TextStyle(fontSize: 16, color: whiteColor),
           ),
           subtitle: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Text(
-                song.artist ?? "Unknown",
-                style: TextStyle(fontSize: 12, color: whiteColor),
+              Expanded(
+                child: FittedBox(
+                  clipBehavior: Clip.antiAlias,
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    song.artist ?? "Unknown",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: whiteColor),
+                  ),
+                ),
               ),
-              Text(
-                _getFormattedDuration(song.duration),
-                style: TextStyle(fontSize: 12, color: whiteColor),
-              ),
+              Expanded(
+                  child: FittedBox(
+                clipBehavior: Clip.antiAlias,
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _getFormattedDuration(song.duration),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: whiteColor),
+                ),
+              ))
             ],
           ),
           leading: QueryArtworkWidget(
