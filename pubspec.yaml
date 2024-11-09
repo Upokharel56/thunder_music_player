@@ -43,6 +43,7 @@ dependencies:
   auto_size_text: ^3.0.0
   volume_controller: ^2.0.8
   logger: ^2.4.0
+  audio_session: ^0.1.21
 
 dev_dependencies:
   flutter_test:

@@ -1,28 +1,35 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:get/get.dart';
+import 'package:thunder_audio_player/controllers/music_controller.dart';
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
+  final MusicController controller = Get.find<MusicController>();
 
   AudioPlayerHandler() {
-    // Initialize streams and listeners
+    // Connect player state with AudioHandler state
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+    _initializeListeners();
   }
 
-  // Map the current state of just_audio to audio_service
+  @override
+  Future<void> customAction(String name, [Map<String, dynamic>? extras]) async {
+    if (name == 'setAudioSource' && extras != null) {
+      final uri = Uri.parse(extras['uri']);
+      await _player.setAudioSource(AudioSource.uri(uri));
+    }
+  }
+
+  // Update playback state for notifications
   PlaybackState _transformEvent(PlaybackEvent event) {
     return PlaybackState(
       controls: [
-        MediaControl.rewind,
+        MediaControl.skipToPrevious,
         _player.playing ? MediaControl.pause : MediaControl.play,
         MediaControl.stop,
-        MediaControl.fastForward,
+        MediaControl.skipToNext,
       ],
-      systemActions: const {
-        MediaAction.seek,
-        MediaAction.seekForward,
-        MediaAction.seekBackward,
-      },
       androidCompactActionIndices: const [0, 1, 2],
       processingState: _getProcessingState(),
       playing: _player.playing,
@@ -32,6 +39,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     );
   }
 
+  // Map player processing state to audio handler state
   AudioProcessingState _getProcessingState() {
     switch (_player.processingState) {
       case ProcessingState.idle:
@@ -49,6 +57,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     }
   }
 
+  // Control methods for notification buttons
   @override
   Future<void> play() => _player.play();
 
@@ -60,4 +69,27 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
+
+  @override
+  Future<void> skipToNext() => controller.next();
+
+  @override
+  Future<void> skipToPrevious() => controller.previous();
+
+  // Set up player to react to controller updates
+  void _initializeListeners() {
+    controller.isPlaying.listen((isPlaying) {
+      if (isPlaying) {
+        play();
+      } else {
+        pause();
+      }
+    });
+    controller.currentIndex.listen((index) {
+      if (index >= 0 && index < controller.songs.length) {
+        final song = controller.songs[index];
+        _player.setAudioSource(AudioSource.uri(Uri.parse(song.uri!)));
+      }
+    });
+  }
 }

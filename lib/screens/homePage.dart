@@ -5,24 +5,52 @@ import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/controllers/music_controller.dart';
 import 'package:thunder_audio_player/screens/music_player.dart';
+import 'package:thunder_audio_player/utils/mini_player.dart';
 
 class Homepage extends StatefulWidget {
   Homepage({super.key});
   final OnAudioQuery audioQuery = OnAudioQuery();
 
+  // @override
   final MusicController controller = Get.put(MusicController());
 
   @override
   State<Homepage> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage> {
+class _HomepageState extends State<Homepage> with MiniPlayer {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: _buildHomeAppBar(),
-      body: _buildLayout(),
+      body: Stack(children: [
+        _buildLayout(),
+        Obx(() {
+          // Show mini player only if a song is playing
+          return widget.controller.isMiniPlayerActive.value
+              ? Align(
+                  alignment: Alignment.bottomCenter,
+                  child: GestureDetector(
+                    onVerticalDragUpdate: (details) {
+                      if (details.primaryDelta! < -10) {
+                        _showMusicPlayerModal(context,
+                            songs: widget.controller.songs);
+                      }
+                    },
+                    child: buildMiniPlayer(
+                      context,
+                      showDismiss: true,
+                      tapAction: () {
+                        _showMusicPlayerModal(context,
+                            songs: widget.controller.songs);
+                      },
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink();
+        })
+      ]),
     );
   }
 
@@ -86,11 +114,10 @@ class _HomepageState extends State<Homepage> {
             borderRadius: BorderRadius.circular(14),
           ),
           onTap: () {
+            // Start playback and open the player as a modal overlay
             widget.controller.startNewStream(snapshot.data!, index);
-            Get.to(
-              () => MusicPlayer(data: snapshot.data!),
-              transition: Transition.downToUp,
-            );
+            widget.controller.isMiniPlayerActive.value = true;
+            // _showMusicPlayerModal(context, songs: snapshot.data!);
           },
           tileColor: bgColor,
           title: Text(
@@ -149,6 +176,28 @@ class _HomepageState extends State<Homepage> {
               : null,
         ),
       ),
+    );
+  }
+
+  void _showMusicPlayerModal(BuildContext context,
+      {List<SongModel> songs = const []}) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: bgColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.98, // Full screen
+          builder: (_, scrollController) => MusicPlayer(
+            data: songs,
+            scrollController: scrollController,
+          ),
+        );
+      },
     );
   }
 

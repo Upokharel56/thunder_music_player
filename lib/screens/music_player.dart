@@ -5,14 +5,18 @@ import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/controllers/music_controller.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/screens/music_player_bottom_nav.dart';
-import '../utils/loggers.dart';
+import 'package:thunder_audio_player/utils/mini_player.dart';
+// import '../utils/loggers.dart';
 
-class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
+class MusicPlayer extends StatelessWidget
+    with MusicPlayerBottomNav, MiniPlayer {
   final List<SongModel> data;
+  final ScrollController? scrollController;
   @override
   final MusicController controller = Get.find<MusicController>();
 
-  MusicPlayer({super.key, required this.data});
+  MusicPlayer({super.key, required this.data, this.scrollController});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -157,14 +161,16 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
   Widget _buildTimeSlider() {
     return Row(
       children: [
-        Text(controller.position.value,
-            style: const TextStyle(fontSize: 12, color: whiteColor)),
+        Text(
+          controller.position.value,
+          style: const TextStyle(fontSize: 12, color: whiteColor),
+        ),
         Expanded(
           child: Slider(
             thumbColor: sliderColor,
-            inactiveColor: whiteColor,
+            inactiveColor: whiteColor.withOpacity(0.3),
             activeColor: sliderColor,
-            min: const Duration(seconds: 0).inSeconds.toDouble(),
+            min: 0.0,
             max: controller.max.value,
             value: controller.value.value,
             onChanged: (newValue) {
@@ -172,8 +178,10 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
             },
           ),
         ),
-        Text(controller.duration.value,
-            style: const TextStyle(fontSize: 12, color: whiteColor)),
+        Text(
+          controller.duration.value,
+          style: const TextStyle(fontSize: 12, color: whiteColor),
+        ),
       ],
     );
   }
@@ -237,6 +245,13 @@ class MusicPlayer extends StatelessWidget with MusicPlayerBottomNav {
     return AppBar(
       foregroundColor: whiteColor,
       title: const Text('Thunder Storm'),
+      leading: IconButton(
+        onPressed: () {
+          Get.back();
+        },
+        icon:
+            const Icon(Icons.keyboard_arrow_down, size: 35, color: whiteColor),
+      ),
       actions: [_buildAppBarActionBtns()],
     );
   }

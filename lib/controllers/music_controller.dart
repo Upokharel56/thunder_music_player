@@ -12,6 +12,9 @@ class MusicController extends GetxController with VolumeControls {
   final RxInt currentIndex = 0.obs; // Current index of the song
   final RxBool isPlaying = false.obs; // Track if audio is playing
 
+//check if the player is played or not
+  final RxBool isMiniPlayerActive = false.obs;
+
 //Duration variables of player being played
   var duration = ''.obs;
   var position = ''.obs;
@@ -41,10 +44,12 @@ class MusicController extends GetxController with VolumeControls {
   }
 
 //Position and duration of the player listeners
-  updatePosition() {
+  void updatePosition() {
     _audioPlayer.durationStream.listen((d) {
-      duration.value = d.toString().split('.')[0];
-      max.value = d!.inSeconds.toDouble();
+      if (d != null) {
+        duration.value = d.toString().split('.')[0];
+        max.value = d.inSeconds.toDouble();
+      }
     });
 
     _audioPlayer.positionStream.listen((p) {
@@ -52,7 +57,7 @@ class MusicController extends GetxController with VolumeControls {
       value.value = p.inSeconds.toDouble();
     });
 
-//When the song ends, play the next song
+    // When the song ends, play the next song
     _audioPlayer.playerStateStream.listen((event) {
       if (event.processingState == ProcessingState.completed) {
         next();
@@ -80,6 +85,9 @@ class MusicController extends GetxController with VolumeControls {
   void _initializePlayer() {
     _audioPlayer.playerStateStream.listen((state) {
       isPlaying.value = state.playing;
+      if (state.processingState == ProcessingState.ready) {
+        updatePosition();
+      }
     });
   }
 
