@@ -3,12 +3,13 @@ import 'dart:math';
 import 'package:audio_service/audio_service.dart';
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:lrc/lrc.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'package:thunder_audio_player/helpers/audio_helpers.dart';
 
-import 'package:thunder_audio_player/utils/volume_controls.dart';
-import 'package:path_provider/path_provider.dart'; // To access the app's local directory
-import 'dart:io'; // For file operations
-import '../utils/loggers.dart';
+import 'package:thunder_audio_player/utils/loggers.dart';
+
+import 'package:thunder_audio_player/platform_channels/android/volume_controls.dart';
 
 class MusicController extends GetxController with VolumeControls {
   final OnAudioQuery _audioQuery = OnAudioQuery();
@@ -27,6 +28,7 @@ class MusicController extends GetxController with VolumeControls {
 //lrc of the song
   final RxString currentLyrics = ''.obs;
   final RxBool hasExternalLrc = false.obs;
+  // final RxString externalLrc = ''.obs;
 
 //check if the player is played or not
   final RxBool isMiniPlayerActive = false.obs;
@@ -35,9 +37,13 @@ class MusicController extends GetxController with VolumeControls {
   var duration = ''.obs;
   var position = ''.obs;
 
+//For time slider and its position
   var max = 0.0.obs;
   var value = 0.0.obs;
 
+//Lyrics variables for lrc contents
+  final LrcHelper lrcHelper = LrcHelper();
+  final lyricsData = {}.obs; // Observable map for the lyrics structure
   final lyricsLines = [].obs; // List of parsed timestamps and lyrics
   final RxInt currentLineIndex =
       (-1).obs; // Observable index for the current line
@@ -46,99 +52,55 @@ class MusicController extends GetxController with VolumeControls {
   void onInit() {
     super.onInit();
     _initializePlayer();
-    // Listen to the playback state and sync with isPlaying
+
+    // Sync `isPlaying` state with audio player state
     _audioPlayer.playerStateStream.listen((state) {
       isPlaying.value = state.playing;
     });
 
+    // Update current line based on playback position
     _audioPlayer.positionStream.listen((position) {
-      for (int i = 0; i < lyricsLines.length; i++) {
-        final lineTime = lyricsLines[i]['time'] as Duration;
-        if (position < lineTime) {
-          currentLineIndex.value = i - 1;
-          break;
-        }
-      }
+      _updateCurrentLine(position);
     });
   }
 
-  // Load lyrics from a local .lrc file
-  Future<void> loadLyrics({SongModel? song, String? songTitle}) async {
-    try {
-      if (song?.uri == null && songTitle == null) {
-        throw Exception('Either song or songTitle must be provided');
-      }
+  // Load and parse lyrics for the song
+  Future<void> loadLyrics(String songUri) async {
+    lyricsData.value = await lrcHelper.initLrc(songUri);
 
-      final List<String> possiblePaths = [];
-      final directory = await getApplicationDocumentsDirectory();
-
-      // Get song filename without extension
-      final songPath = song?.uri ?? '';
-      final songFile = songPath.split('/').last;
-      final songName = songFile.replaceAll(RegExp(r'\.[^.]+$'), '');
-
-      final songRoot = songPath.substring(0, songPath.lastIndexOf('/'));
-
-      // Check multiple possible locations
-      possiblePaths.addAll([
-        // 1. Check in song's directory
-        // '${directory.path}/${songPath.substring(0, songPath.lastIndexOf('/'))}/$songName.lrc',
-        // // 2. Check in dedicated lyrics folder
-        // '${directory.path}/lyrics/$songName.lrc',
-        // // 3. Check using provided songTitle
-        // if (songTitle != null) '${directory.path}/lyrics/$songTitle.lrc',
-        // 4. Check in song's root directory
-        'sdcard/$songRoot/$songName.lrc',
-      ]);
-
-      for (final path in possiblePaths) {
-        final file = File(path);
-        if (await file.exists()) {
-          final lyrics = await file.readAsString();
-          currentLyrics.value = lyrics;
-          hasExternalLrc.value = true;
-          parseLyrics(lyrics);
-          log("Lyrics loaded successfully from: $path");
-          return;
-        }
-      }
-
-      // No lyrics found in any location
-      hasExternalLrc.value = false;
-      currentLyrics.value = "No lyrics available.";
-      log("\n\n No lyrics found for this song. Checked paths: ${possiblePaths.join('\n')} \n\n");
-    } catch (e) {
-      err("\n\n Error loading lyrics: \n $e \n\n");
-      currentLyrics.value = "Lyrics not available.";
+    // Check if external or internal lyrics are synchronized
+    if (lyricsData['external']['isSynced']) {
+      _syncLyrics(lyricsData['external']['synced']);
+    } else if (lyricsData['internal']['isSynced']) {
+      _syncLyrics(lyricsData['internal']['synced']);
     }
   }
 
-  void parseLyrics(String content) {
-    final lines = content.split('\n');
+  // Synchronize lyrics by initializing LRC
+  void _syncLyrics(Lrc? parsedLrc) {
+    if (parsedLrc == null) return;
 
-    lyricsLines.clear();
-    for (var line in lines) {
-      final match =
-          RegExp(r'\[(\d{2}):(\d{2})\.(\d{2})\](.*)').firstMatch(line);
-      if (match != null) {
-        final minutes = int.parse(match.group(1)!);
-        final seconds = int.parse(match.group(2)!);
-        final milliseconds = int.parse(match.group(3)!);
-        final time = Duration(
-            minutes: minutes, seconds: seconds, milliseconds: milliseconds);
-        final lyrics = match.group(4)!.trim();
-
-        lyricsLines.add({
-          'time': time,
-          'lyrics': lyrics,
-        });
-      }
-    }
-    lyricsLines.sort((a, b) => a['time'].compareTo(b['time']));
-    log("\n\n Lyrics parsed successfully. \n $lyricsLines \n\n");
+    lyricsLines.assignAll(parsedLrc.lyrics);
+    currentLineIndex.value = -1;
   }
 
-  // Modify playSongAt to check initialization
+  // Update current line based on the position of the audio
+  void _updateCurrentLine(Duration position) {
+    for (int i = 0; i < lyricsLines.length; i++) {
+      final line = lyricsLines[i];
+      final nextLineTime = i + 1 < lyricsLines.length
+          ? lyricsLines[i + 1].timestamp
+          : Duration.zero;
+
+      // Check if the current position falls within this line's timestamp
+      if (position >= line.timestamp && position < nextLineTime) {
+        currentLineIndex.value = i;
+        break;
+      }
+    }
+  }
+
+  // Play a specific song and load its lyrics
   Future<void> playSongAt(int index) async {
     try {
       final song = songs[index];
@@ -155,17 +117,21 @@ class MusicController extends GetxController with VolumeControls {
       ));
       await _audioPlayer.play();
       isPlaying.value = true;
+
+      // Load lyrics for the current song
+      loadLyrics(song.uri!);
       updatePosition();
-      loadLyrics(song: song, songTitle: song.title);
+
+      msg("Playing song: ${song.title}");
     } catch (e) {
-      log("Error playing song: $e");
+      err("Error playing song: $e");
     }
   }
 
   setSongs(List<SongModel> songs) {
-    log("\n\n");
-    log("$songs");
-    log("\n\n");
+    msg("\n\n");
+    msg("$songs");
+    msg("\n\n");
     songs.addAll(songs);
   }
 
@@ -246,11 +212,7 @@ class MusicController extends GetxController with VolumeControls {
   }
 
   Future<void> togglePlay() async {
-    if (isPlaying.value) {
-      await pause();
-    } else {
-      await play();
-    }
+    isPlaying.value ? await pause() : await play();
   }
 
   // Resume playing

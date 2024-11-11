@@ -40,12 +40,16 @@ dependencies:
   audio_service: ^0.18.15
   permission_handler: ^11.3.1
   on_audio_query: ^2.9.0
-  auto_size_text: ^3.0.0
-  volume_controller: ^2.0.8
+
+
   logger: ^2.4.0
   audio_session: ^0.1.21
   just_audio_background: ^0.0.1-beta.13
   path_provider: ^2.1.5
+  auto_size_text: ^3.0.0
+  audiotagger: ^2.2.1
+  lrc: ^1.0.2
+
 
 dev_dependencies:
   flutter_test:

@@ -1,4 +1,4 @@
-import 'package:auto_size_text/auto_size_text.dart';
+import 'package:auto_size_text/auto_size_text.dart' show AutoSizeText;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:on_audio_query/on_audio_query.dart';
@@ -146,7 +146,7 @@ class MusicPlayer extends StatelessWidget
         ),
         IconButton(
           onPressed: () {
-            controller.setVolume(controller.volume.value);
+            controller.showVolumeSlider();
           },
           icon: const Icon(
             Icons.volume_up_rounded,
