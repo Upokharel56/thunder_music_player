@@ -1,60 +1,89 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'package:thunder_audio_player/builders/song_list_builders.dart';
 
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/controllers/music_controller.dart';
+import 'package:thunder_audio_player/pages/all_songs_page.dart';
+import 'package:thunder_audio_player/routes/routes_controller.dart';
 import 'package:thunder_audio_player/screens/music_player.dart';
+import 'package:thunder_audio_player/utils/loggers.dart';
 import 'package:thunder_audio_player/utils/mini_player.dart';
+import 'package:thunder_audio_player/pages/albums_page.dart';
+import 'package:thunder_audio_player/pages/artists_page.dart';
+import 'package:thunder_audio_player/pages/playlist_page.dart';
 
 class Homepage extends StatefulWidget {
   Homepage({super.key});
   final OnAudioQuery audioQuery = OnAudioQuery();
 
-  // @override
   final MusicController controller = Get.put(MusicController());
+  final RoutesController routesController = Get.put(RoutesController());
 
   @override
   State<Homepage> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage> with MiniPlayer {
+class _HomepageState extends State<Homepage> with MiniPlayer, SongListBuilders {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bgColor,
-      appBar: _buildHomeAppBar(),
-      body: Stack(children: [
-        _buildLayout(),
-        Obx(() {
-          // Show mini player only if a song is playing
-          return widget.controller.isMiniPlayerActive.value
-              ? Align(
-                  alignment: Alignment.bottomCenter,
-                  child: GestureDetector(
-                    onVerticalDragUpdate: (details) {
-                      if (details.primaryDelta! < -10) {
-                        _showMusicPlayerModal(context,
-                            songs: widget.controller.songs);
-                      }
-                    },
-                    child: buildMiniPlayer(
-                      context,
-                      showDismiss: true,
-                      tapAction: () {
-                        _showMusicPlayerModal(context,
-                            songs: widget.controller.songs);
-                      },
-                    ),
-                  ),
-                )
-              : const SizedBox.shrink();
-        })
-      ]),
-    );
+    return PopScope(
+        canPop: true, // or false depending on your needs
+        onPopInvokedWithResult: (didPop, result) async {
+          // This is where you handle the pop result
+          widget.routesController.goBack();
+          warn("Did pop: $didPop,\n result: $result", tag: 'PopScope');
+          // msg("Did pop: $didPop,\n result: $result");
+        },
+        child: Scaffold(
+          backgroundColor: bgColor,
+          appBar: _buildHomeAppBar(),
+          body: Stack(children: [
+            _buildContentBasedOnRoute(),
+            Obx(() {
+              return widget.controller.isMiniPlayerActive.value
+                  ? Align(
+                      alignment: Alignment.bottomCenter,
+                      child: GestureDetector(
+                        onVerticalDragUpdate: (details) {
+                          if (details.primaryDelta! < -10) {
+                            _showMusicPlayerModal(context,
+                                songs: widget.controller.songs);
+                          }
+                        },
+                        child: buildMiniPlayer(
+                          context,
+                          showDismiss: true,
+                          tapAction: () {
+                            _showMusicPlayerModal(context,
+                                songs: widget.controller.songs);
+                          },
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink();
+            })
+          ]),
+        ));
   }
 
-  Widget _buildLayout() {
+  Widget _buildContentBasedOnRoute() {
+    return Obx(() {
+      switch (widget.routesController.activeLink.value) {
+        case 'Albums':
+          return const AlbumsPage(); // Replace with actual Albums widget
+        case 'Artists':
+          return const ArtistsPage(); // Replace with actual Artists widget
+        case 'Playlists':
+          return const PlaylistsPage(); // Replace with actual Playlists widget
+        default:
+          return const AllSongsPage(); // Default to Songs layout
+      }
+    });
+  }
+
+  Widget _buildSongsLayout() {
     return FutureBuilder<List<SongModel>>(
         future: widget.audioQuery.querySongs(
           ignoreCase: true,
@@ -78,7 +107,8 @@ class _HomepageState extends State<Homepage> with MiniPlayer {
           } else {
             return Padding(
               padding: const EdgeInsets.all(8.0),
-              child: _buildSongList(snapshot),
+              child: buildSongList(
+                  snapshot: snapshot), // Uses the SongListBuilders mixin
             );
           }
         });
@@ -90,91 +120,6 @@ class _HomepageState extends State<Homepage> with MiniPlayer {
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(20),
         child: _buildNavLinks(),
-      ),
-    );
-  }
-
-  Widget _buildSongList(AsyncSnapshot<List<SongModel>> snapshot) {
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      itemCount: snapshot.data!.length,
-      itemBuilder: (BuildContext context, int index) {
-        return _buildSongItem(snapshot, index);
-      },
-    );
-  }
-
-  Widget _buildSongItem(AsyncSnapshot<List<SongModel>> snapshot, int index) {
-    final song = snapshot.data![index];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 5, right: 8, left: 3),
-      child: Obx(
-        () => ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          onTap: () {
-            // Start playback and open the player as a modal overlay
-            widget.controller.startNewStream(snapshot.data!, index);
-            widget.controller.isMiniPlayerActive.value = true;
-            // _showMusicPlayerModal(context, songs: snapshot.data!);
-          },
-          tileColor: bgColor,
-          title: Text(
-            song.title,
-            style: const TextStyle(fontSize: 16, color: whiteColor),
-          ),
-          subtitle: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text(
-                  "< ${song.artist ?? "Unknown"} >",
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: whiteColor,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 3),
-              Expanded(
-                  flex: 1,
-                  child: FittedBox(
-                    clipBehavior: Clip.antiAlias,
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      _getFormattedDuration(song.duration),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: whiteColor),
-                    ),
-                  ))
-            ],
-          ),
-          leading: QueryArtworkWidget(
-            id: song.id,
-            type: ArtworkType.AUDIO,
-            nullArtworkWidget: const Icon(
-              Icons.music_note_rounded,
-              color: whiteColor,
-              size: 35,
-            ),
-            artworkHeight: 55,
-            artworkWidth: 50,
-            artworkBorder: const BorderRadius.all(Radius.circular(8)),
-          ),
-          trailing: widget.controller.currentIndex == index &&
-                  widget.controller.isPlaying.value
-              ? const Icon(
-                  Icons.pause_circle,
-                  color: whiteColor,
-                  size: 38,
-                )
-              : null,
-        ),
       ),
     );
   }
@@ -191,7 +136,7 @@ class _HomepageState extends State<Homepage> with MiniPlayer {
       builder: (BuildContext context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.98, // Full screen
+          initialChildSize: 0.98,
           builder: (_, scrollController) => MusicPlayer(
             data: songs,
             scrollController: scrollController,
@@ -202,44 +147,37 @@ class _HomepageState extends State<Homepage> with MiniPlayer {
   }
 
   Widget _buildNavLinks() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[
-          TextButton(
-            onPressed: () {},
-            child: const Text('Songs', style: TextStyle(fontSize: 18)),
-          ),
-          TextButton(
-            onPressed: () {},
-            child: const Text('Albums', style: TextStyle(fontSize: 18)),
-          ),
-          TextButton(
-            onPressed: () {},
-            child: const Text('Artists', style: TextStyle(fontSize: 18)),
-          ),
-          TextButton(
-            onPressed: () {},
-            child: const Text('Playlists', style: TextStyle(fontSize: 18)),
-          ),
-        ],
-      ),
-    );
+    return Obx(() {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: <Widget>[
+            _buildNavLink('Songs', '/homepage'),
+            _buildNavLink('Albums', '/albums'),
+            _buildNavLink('Artists', '/artists'),
+            _buildNavLink('Playlists', '/playlists'),
+          ],
+        ),
+      );
+    });
   }
 
-  String _getFormattedDuration(int? duration) {
-    if (duration == null) return '0:00';
-
-    final durationInSeconds = duration ~/ 1000;
-    final hours = (durationInSeconds ~/ 3600).toString().padLeft(2, '0');
-    final minutes =
-        ((durationInSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
-    final seconds = (durationInSeconds % 60).toString().padLeft(2, '0');
-
-    if (hours == "00") {
-      return '$minutes:$seconds';
-    }
-    return '$hours:$minutes:$seconds';
+  Widget _buildNavLink(String title, String route) {
+    return TextButton(
+      onPressed: () {
+        widget.routesController.setActiveLink(title);
+        // Navigator.pushNamed(context, route);
+      },
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          color: widget.routesController.activeLink.value == title
+              ? Colors.green
+              : Colors.white,
+        ),
+      ),
+    );
   }
 }

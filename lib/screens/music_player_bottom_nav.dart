@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'package:thunder_audio_player/builders/song_list_builders.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
+// import 'package:thunder_audio_player/controllers/music_controller.dart';
 import 'package:thunder_audio_player/utils/mini_player.dart';
 
-mixin MusicPlayerBottomNav implements MiniPlayer {
+mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
   // final MusicController controller = Get.find<MusicController>();
   final RxInt selectedIndex = 0.obs; // Track selected index
 
@@ -142,88 +144,13 @@ mixin MusicPlayerBottomNav implements MiniPlayer {
   }
 
   Widget _build_upNext_state() {
-    final snapshot = controller.songs;
+    final songList = controller.songs;
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      itemCount: snapshot.length,
+      itemCount: songList.length,
       itemBuilder: (BuildContext context, int index) {
-        return _buildSongItem(snapshot, index);
+        return buildSongItem(songs: songList, index: index);
       },
-    );
-  }
-
-  Widget _buildSongItem(List<SongModel> upcomingSongsList, int index) {
-    final song = upcomingSongsList[index];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 5, right: 8, left: 3),
-      child: Obx(
-        () => ListTile(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          onTap: () {
-            controller.playSongAt(index);
-          },
-          tileColor: bgColor,
-          title: Text(
-            song.title,
-            style: const TextStyle(fontSize: 16, color: whiteColor),
-          ),
-          subtitle: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text(
-                  "< ${song.artist ?? "Unknown"} >",
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: whiteColor,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 3),
-              Expanded(
-                  flex: 1,
-                  child: FittedBox(
-                    clipBehavior: Clip.antiAlias,
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      _getFormattedDuration(song.duration),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 12, color: whiteColor),
-                    ),
-                  ))
-            ],
-          ),
-          leading: QueryArtworkWidget(
-            id: song.id,
-            type: ArtworkType.AUDIO,
-            nullArtworkWidget: const Icon(
-              Icons.music_note_rounded,
-              color: whiteColor,
-              size: 35,
-            ),
-            artworkHeight: 55,
-            artworkWidth: 50,
-            artworkBorder: const BorderRadius.all(Radius.circular(8)),
-          ),
-          trailing:
-              controller.currentIndex == index && controller.isPlaying.value
-                  ? IconButton(
-                      icon: const Icon(Icons.stop_circle,
-                          color: whiteColor, size: 30),
-                      color: whiteColor,
-                      onPressed: () {
-                        controller.pause();
-                      },
-                    )
-                  : null,
-        ),
-      ),
     );
   }
 

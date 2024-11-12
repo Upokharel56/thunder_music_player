@@ -2,6 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart' show AutoSizeText;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:on_audio_query/on_audio_query.dart';
+import 'package:thunder_audio_player/builders/song_list_builders.dart';
 import 'package:thunder_audio_player/controllers/music_controller.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/screens/music_player_bottom_nav.dart';
@@ -9,11 +10,11 @@ import 'package:thunder_audio_player/utils/mini_player.dart';
 // import '../utils/loggers.dart';
 
 class MusicPlayer extends StatelessWidget
-    with MusicPlayerBottomNav, MiniPlayer {
+    with MusicPlayerBottomNav, MiniPlayer, SongListBuilders {
   final List<SongModel> data;
   final ScrollController? scrollController;
   @override
-  final MusicController controller = Get.find<MusicController>();
+  // final MusicController controller = Get.find<MusicController>();
 
   MusicPlayer({super.key, required this.data, this.scrollController});
 

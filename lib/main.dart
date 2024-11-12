@@ -5,6 +5,10 @@ import 'package:thunder_audio_player/consts/styles.dart';
 import 'package:thunder_audio_player/consts/utils.dart';
 import 'package:thunder_audio_player/screens/homePage.dart';
 import 'package:thunder_audio_player/screens/no_permission_page.dart';
+import 'package:thunder_audio_player/utils/app_bindings.dart';
+import 'package:thunder_audio_player/pages/albums_page.dart';
+import 'package:thunder_audio_player/pages/artists_page.dart';
+import 'package:thunder_audio_player/pages/playlist_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,10 +35,26 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      initialBinding: AppBindings(), // Add this line
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: myTheme,
       home: Homepage(),
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/homepage':
+            return MaterialPageRoute(builder: (context) => Homepage());
+          case '/playlists':
+            return MaterialPageRoute(
+                builder: (context) => const PlaylistsPage());
+          case '/artists':
+            return MaterialPageRoute(builder: (context) => const ArtistsPage());
+          case '/albums':
+            return MaterialPageRoute(builder: (context) => const AlbumsPage());
+          default:
+            return MaterialPageRoute(builder: (context) => Homepage());
+        }
+      },
     );
   }
 }

@@ -32,6 +32,10 @@ void debug(dynamic message, {String? tag}) {
   _logger.d('${tag != null ? '[$tag] ' : ''}$message');
 }
 
+void warn(dynamic message, {String? tag}) {
+  _logger.w('${tag != null ? '[$tag] ' : ''}$message');
+}
+
 // Add this helper method
 String getErrorLocation(StackTrace stackTrace) {
   try {
