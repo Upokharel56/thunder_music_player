@@ -32,7 +32,17 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
     return GestureDetector(
       onTap: () {
         selectedIndex.value = index;
-        showFullScreenPopup(); // Show full-screen popup when tapped
+        showFullScreenPopup();
+        // Show full-screen popup when tapped
+      },
+      onHorizontalDragEnd: (DragEndDetails details) {
+        if (details.primaryVelocity! < 0) {
+          // Swiped Left - Next Song
+          selectedIndex.value = index == 2 ? index : index + 1;
+        } else if (details.primaryVelocity! > 0) {
+          // Swiped Right - Previous Song
+          selectedIndex.value = index == 0 ? index : index - 1;
+        }
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -119,6 +129,15 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
     return GestureDetector(
       onTap: () {
         selectedIndex.value = index; // Update the selected index
+      },
+      onHorizontalDragEnd: (DragEndDetails details) {
+        if (details.primaryVelocity! < 0) {
+          // Swiped Left - Next Song
+          selectedIndex.value = index == 2 ? index : index + 1;
+        } else if (details.primaryVelocity! > 0) {
+          // Swiped Right - Previous Song
+          selectedIndex.value = index == 0 ? index : index - 1;
+        }
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,

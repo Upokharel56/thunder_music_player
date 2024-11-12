@@ -26,7 +26,11 @@ class _GenresPageState extends State<GenresPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      body: _buildContent(),
+      body: RefreshIndicator(
+          child: _buildContent(),
+          onRefresh: () async {
+            _loadGenresList();
+          }),
     );
   }
 

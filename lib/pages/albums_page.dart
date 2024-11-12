@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
+import 'package:thunder_audio_player/pages/inside_screen.dart';
 import 'package:thunder_audio_player/utils/loggers.dart';
 
 class AlbumsPage extends StatefulWidget {
@@ -43,7 +44,11 @@ class _AlbumsPageState extends State<AlbumsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      body: _buildContent(),
+      body: RefreshIndicator(
+          child: _buildContent(),
+          onRefresh: () async {
+            _loadAlbumList();
+          }),
     );
   }
 
@@ -86,60 +91,73 @@ class _AlbumsPageState extends State<AlbumsPage> {
 
   Widget buildAlbumItem(
       {required List<AlbumModel> albums, required int index}) {
-    return Card(
-      color: Colors.black12,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0, right: 5, left: 5, top: 2),
-        child: Column(
-          children: [
-            // Artwork container with fixed size 185x185
-            SizedBox(
-              height: 185,
-              width: 185,
-              child: QueryArtworkWidget(
-                id: albums[index].id,
-                type: ArtworkType.ALBUM,
-                nullArtworkWidget: const Icon(
-                  Icons.music_note_rounded,
-                  color: whiteColor,
-                  size: 80,
+    return GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => InsideScreen(
+                model: albums[index],
+                type: AudioModelType.album,
+              ),
+            ),
+          );
+        }, // Handle tap action
+        child: Card(
+          color: Colors.black12,
+          child: Padding(
+            padding:
+                const EdgeInsets.only(bottom: 8.0, right: 5, left: 5, top: 2),
+            child: Column(
+              children: [
+                // Artwork container with fixed size 185x185
+                SizedBox(
+                  height: 185,
+                  width: 185,
+                  child: QueryArtworkWidget(
+                    id: albums[index].id,
+                    type: ArtworkType.ALBUM,
+                    nullArtworkWidget: const Icon(
+                      Icons.music_note_rounded,
+                      color: whiteColor,
+                      size: 80,
+                    ),
+                    artworkBorder: BorderRadius.circular(25),
+                    artworkHeight: 185,
+                    artworkWidth: 185,
+                    format: ArtworkFormat.PNG,
+                    artworkFit: BoxFit.contain,
+                  ),
                 ),
-                artworkBorder: BorderRadius.circular(25),
-                artworkHeight: 185,
-                artworkWidth: 185,
-                format: ArtworkFormat.PNG,
-                artworkFit: BoxFit.contain,
-              ),
+                const SizedBox(height: 8),
+                // Album title - font size 16
+                Text(
+                  albums[index].album ?? 'Unknown Album',
+                  style: const TextStyle(
+                    color: whiteColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                // Artist name - font size 12
+                Text(
+                  albums[index].artist ?? 'Unknown Artist',
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 10,
+                  ),
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                // Remaining space ~12px for future use
+              ],
             ),
-            const SizedBox(height: 8),
-            // Album title - font size 16
-            Text(
-              albums[index].album ?? 'Unknown Album',
-              style: const TextStyle(
-                color: whiteColor,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Artist name - font size 12
-            Text(
-              albums[index].artist ?? 'Unknown Artist',
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 10,
-              ),
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-            // Remaining space ~12px for future use
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 }

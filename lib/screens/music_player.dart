@@ -59,28 +59,38 @@ class MusicPlayer extends StatelessWidget
   }
 
   Widget _buildArtworkContainer() {
-    return Container(
-      height: controller.isPlaying.value ? 300 : 230,
-      width: controller.isPlaying.value ? 300 : 230,
-      decoration: const BoxDecoration(
-        borderRadius: BorderRadius.all(Radius.circular(35)),
-        color: blackColor,
-      ),
-      child: QueryArtworkWidget(
-        id: data[controller.currentIndex.value].id,
-        artworkQuality: FilterQuality.high,
-        // artworkHeight: 330,
-        // artworkWidth: 330,
-        type: ArtworkType.AUDIO,
-        artworkFit: BoxFit.contain,
-        // artworkColor: blackColor,
-        nullArtworkWidget: const Icon(
-          Icons.music_note,
-          size: 100,
-          color: whiteColor,
-        ),
-      ),
-    );
+    return GestureDetector(
+        onHorizontalDragEnd: (DragEndDetails details) {
+          if (details.primaryVelocity! < 0) {
+            // Swiped Left - Next Song
+            controller.next();
+          } else if (details.primaryVelocity! > 0) {
+            // Swiped Right - Previous Song
+            controller.previous();
+          }
+        },
+        child: Container(
+          height: controller.isPlaying.value ? 300 : 230,
+          width: controller.isPlaying.value ? 300 : 230,
+          decoration: const BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(35)),
+            color: blackColor,
+          ),
+          child: QueryArtworkWidget(
+            id: data[controller.currentIndex.value].id,
+            artworkQuality: FilterQuality.high,
+            // artworkHeight: 330,
+            // artworkWidth: 330,
+            type: ArtworkType.AUDIO,
+            artworkFit: BoxFit.contain,
+            // artworkColor: blackColor,
+            nullArtworkWidget: const Icon(
+              Icons.music_note,
+              size: 100,
+              color: whiteColor,
+            ),
+          ),
+        ));
   }
 
   Widget _buildAudioDetails() {

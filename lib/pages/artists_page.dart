@@ -26,7 +26,8 @@ class _ArtistsPageState extends State<ArtistsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-      body: _buildContent(),
+      body: RefreshIndicator(
+          child: _buildContent(), onRefresh: () async => _loadArtistsList()),
     );
   }
 

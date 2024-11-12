@@ -86,17 +86,23 @@ class MusicController extends GetxController with VolumeControls {
 
   // Update current line based on the position of the audio
   void _updateCurrentLine(Duration position) {
-    for (int i = 0; i < lyricsLines.length; i++) {
-      final line = lyricsLines[i];
-      final nextLineTime = i + 1 < lyricsLines.length
-          ? lyricsLines[i + 1].timestamp
-          : Duration.zero;
+    if (lyricsLines.isEmpty) return; // Add this check
 
-      // Check if the current position falls within this line's timestamp
-      if (position >= line.timestamp && position < nextLineTime) {
-        currentLineIndex.value = i;
-        break;
+    try {
+      for (int i = 0; i < lyricsLines.length; i++) {
+        final line = lyricsLines[i];
+        final nextLineTime = i + 1 < lyricsLines.length
+            ? lyricsLines[i + 1].timestamp
+            : Duration.zero;
+
+        // Check if the current position falls within this line's timestamp
+        if (position >= line.timestamp && position < nextLineTime) {
+          currentLineIndex.value = i;
+          break;
+        }
       }
+    } catch (e) {
+      err("Error updating current line: $e", tag: 'Lyrics Error');
     }
   }
 
@@ -118,8 +124,13 @@ class MusicController extends GetxController with VolumeControls {
       await _audioPlayer.play();
       isPlaying.value = true;
 
-      // Load lyrics for the current song
-      loadLyrics(song.uri!);
+      try {
+        // Load lyrics for the current song
+        await loadLyrics(songs[index].uri ?? "");
+      } catch (e) {
+        err("Error loading lyrics: $e", tag: 'Lyrics Loading Error');
+      }
+
       updatePosition();
 
       msg("Playing song: ${song.title}");
