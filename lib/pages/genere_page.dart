@@ -3,23 +3,23 @@ import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/utils/loggers.dart';
 
-class ArtistsPage extends StatefulWidget {
-  const ArtistsPage({super.key});
+class GenresPage extends StatefulWidget {
+  const GenresPage({super.key});
 
   @override
-  State<ArtistsPage> createState() => _ArtistsPageState();
+  State<GenresPage> createState() => _GenresPageState();
 }
 
-class _ArtistsPageState extends State<ArtistsPage> {
+class _GenresPageState extends State<GenresPage> {
   final OnAudioQuery _audioQuery = OnAudioQuery();
 
-  List<ArtistModel> artists = [];
+  List<GenreModel> genres = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadArtistsList();
+    _loadGenresList();
   }
 
   @override
@@ -30,57 +30,19 @@ class _ArtistsPageState extends State<ArtistsPage> {
     );
   }
 
-  _loadArtistsList() async {
-    // Get artists
-    try {
-      var results = await _audioQuery.queryArtists(
-        orderType: OrderType.ASC_OR_SMALLER,
-        sortType: ArtistSortType.ARTIST,
-      );
-
-      results.sort((a, b) {
-        // Convert artist names to lowercase for case-insensitive comparison
-        String artistA = a.artist.toLowerCase();
-        String artistB = b.artist.toLowerCase();
-
-        // Check for various "unknown" cases
-        bool isUnknownA = artistA == 'unknown' || artistA == '<unknown>';
-        bool isUnknownB = artistB == 'unknown' || artistB == '<unknown>';
-
-        // Place unknown artists at start
-        if (isUnknownA && !isUnknownB) return -1;
-        if (!isUnknownA && isUnknownB) return 1;
-
-        // Normal alphabetical sorting for other cases
-        return a.artist.compareTo(b.artist);
-      });
-
-      setState(() {
-        artists = results;
-        isLoading = false;
-      });
-    } catch (e) {
-      // Handle error
-      err('Error loading albums: $e', tag: 'Artists Fetch error');
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
   Widget _buildContent() {
     if (isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (artists.isEmpty) {
+    if (genres.isEmpty) {
       return const Center(child: Text('No artists found'));
     }
 
-    return buildArtistsLayout();
+    return buildGenreLayout();
   }
 
-  Widget buildArtistsLayout() {
+  Widget buildGenreLayout() {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Calculate columns based on screen width and fixed item width of 225
@@ -97,29 +59,65 @@ class _ArtistsPageState extends State<ArtistsPage> {
             crossAxisSpacing: 5,
             mainAxisSpacing: 8,
           ),
-          itemCount: artists.length,
-          itemBuilder: (context, index) => buildArtistItem(index),
+          itemCount: genres.length,
+          itemBuilder: (context, index) => buildGenreItem(index),
         );
       },
     );
   }
 
-  Widget buildArtistItem(int index) {
+  _loadGenresList() async {
+    try {
+      var results = await _audioQuery.queryGenres(
+        orderType: OrderType.ASC_OR_SMALLER,
+        sortType: null, // GenreSortType doesn't exist in the package
+      );
+
+      results.sort((a, b) {
+        // Convert genre names to lowercase for case-insensitive comparison
+        String genreA = a.genre.toLowerCase();
+        String genreB = b.genre.toLowerCase();
+
+        // Check for various "unknown" cases
+        bool isUnknownA = genreA == 'unknown' || genreA == '<unknown>';
+        bool isUnknownB = genreB == 'unknown' || genreB == '<unknown>';
+
+        // Place unknown genres at start
+        if (isUnknownA && !isUnknownB) return -1;
+        if (!isUnknownA && isUnknownB) return 1;
+
+        // Normal alphabetical sorting
+        return a.genre.compareTo(b.genre);
+      });
+
+      setState(() {
+        genres = results;
+        isLoading = false;
+      });
+    } catch (e) {
+      err('Error loading genres: $e', tag: 'Genres Fetch error');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Widget buildGenreItem(int index) {
     return Card(
       color: Colors.black12,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8.0, right: 5, left: 5, top: 2),
         child: Column(
           children: [
-            // Artist artwork container with fixed size 185x185
+            // Genre artwork container with fixed size 185x185
             SizedBox(
               height: 185,
               width: 185,
               child: QueryArtworkWidget(
-                id: artists[index].id,
-                type: ArtworkType.ARTIST,
+                id: genres[index].id,
+                type: ArtworkType.GENRE,
                 nullArtworkWidget: const Icon(
-                  Icons.person_rounded,
+                  Icons.queue_music_rounded,
                   color: whiteColor,
                   size: 80,
                 ),
@@ -131,9 +129,9 @@ class _ArtistsPageState extends State<ArtistsPage> {
               ),
             ),
             const SizedBox(height: 8),
-            // Artist name
+            // Genre name
             Text(
-              artists[index].artist,
+              genres[index].genre,
               style: const TextStyle(
                 color: whiteColor,
                 fontSize: 16,
@@ -146,7 +144,7 @@ class _ArtistsPageState extends State<ArtistsPage> {
             const SizedBox(height: 4),
             // Number of tracks
             Text(
-              '${artists[index].numberOfTracks} tracks',
+              '${genres[index].numOfSongs} tracks',
               style: const TextStyle(
                 color: Colors.grey,
                 fontSize: 12,
@@ -160,4 +158,8 @@ class _ArtistsPageState extends State<ArtistsPage> {
       ),
     );
   }
+
+  // Rest of the layout code remains the same, just update references:
+  // - artists.length -> genres.length
+  // - buildArtistItem -> buildGenreItem
 }

@@ -6,6 +6,7 @@ import 'package:thunder_audio_player/builders/song_list_builders.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/controllers/music_controller.dart';
 import 'package:thunder_audio_player/pages/all_songs_page.dart';
+import 'package:thunder_audio_player/pages/genere_page.dart';
 import 'package:thunder_audio_player/routes/routes_controller.dart';
 import 'package:thunder_audio_player/screens/music_player.dart';
 import 'package:thunder_audio_player/utils/loggers.dart';
@@ -76,7 +77,7 @@ class _HomepageState extends State<Homepage> with MiniPlayer, SongListBuilders {
         case 'Artists':
           return const ArtistsPage(); // Replace with actual Artists widget
         case 'Playlists':
-          return const PlaylistsPage(); // Replace with actual Playlists widget
+          return const GenresPage(); // Replace with actual Playlists widget
         default:
           return const AllSongsPage(); // Default to Songs layout
       }
