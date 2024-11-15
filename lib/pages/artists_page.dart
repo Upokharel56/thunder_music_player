@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
+import 'package:thunder_audio_player/pages/inside_screen.dart';
 import 'package:thunder_audio_player/utils/loggers.dart';
 
 class ArtistsPage extends StatefulWidget {
@@ -10,7 +11,8 @@ class ArtistsPage extends StatefulWidget {
   State<ArtistsPage> createState() => _ArtistsPageState();
 }
 
-class _ArtistsPageState extends State<ArtistsPage> {
+class _ArtistsPageState extends State<ArtistsPage>
+    with AutomaticKeepAliveClientMixin {
   final OnAudioQuery _audioQuery = OnAudioQuery();
 
   List<ArtistModel> artists = [];
@@ -21,6 +23,9 @@ class _ArtistsPageState extends State<ArtistsPage> {
     super.initState();
     _loadArtistsList();
   }
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
@@ -106,57 +111,71 @@ class _ArtistsPageState extends State<ArtistsPage> {
   }
 
   Widget buildArtistItem(int index) {
-    return Card(
-      color: Colors.black12,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0, right: 5, left: 5, top: 2),
-        child: Column(
-          children: [
-            // Artist artwork container with fixed size 185x185
-            SizedBox(
-              height: 185,
-              width: 185,
-              child: QueryArtworkWidget(
-                id: artists[index].id,
-                type: ArtworkType.ARTIST,
-                nullArtworkWidget: const Icon(
-                  Icons.person_rounded,
-                  color: whiteColor,
-                  size: 80,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => InsideScreen(
+              model: artists[index],
+              type: AudioModelType.artist,
+            ),
+          ),
+        );
+      },
+      child: Card(
+        color: Colors.black12,
+        child: Padding(
+          padding:
+              const EdgeInsets.only(bottom: 8.0, right: 5, left: 5, top: 2),
+          child: Column(
+            children: [
+              // Artist artwork container with fixed size 185x185
+              SizedBox(
+                height: 185,
+                width: 185,
+                child: QueryArtworkWidget(
+                  id: artists[index].id,
+                  type: ArtworkType.ARTIST,
+                  nullArtworkWidget: const Icon(
+                    Icons.person_rounded,
+                    color: whiteColor,
+                    size: 80,
+                  ),
+                  artworkBorder: BorderRadius.circular(25),
+                  artworkHeight: 185,
+                  artworkWidth: 185,
+                  format: ArtworkFormat.PNG,
+                  artworkFit: BoxFit.contain,
                 ),
-                artworkBorder: BorderRadius.circular(25),
-                artworkHeight: 185,
-                artworkWidth: 185,
-                format: ArtworkFormat.PNG,
-                artworkFit: BoxFit.contain,
               ),
-            ),
-            const SizedBox(height: 8),
-            // Artist name
-            Text(
-              artists[index].artist,
-              style: const TextStyle(
-                color: whiteColor,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 8),
+              // Artist name
+              Text(
+                artists[index].artist,
+                style: const TextStyle(
+                  color: whiteColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Number of tracks
-            Text(
-              '${artists[index].numberOfTracks} tracks',
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
+              const SizedBox(height: 4),
+              // Number of tracks
+              Text(
+                '${artists[index].numberOfTracks} tracks',
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

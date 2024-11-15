@@ -1,84 +1,64 @@
 import 'dart:io';
 import 'package:audiotagger/audiotagger.dart';
 import 'package:audiotagger/models/tag.dart';
+import 'package:get/get.dart';
 import 'package:lrc/lrc.dart';
+import 'package:thunder_audio_player/controllers/music_controller.dart';
 import '../platform_channels/android/file_path_helper.dart';
 import '../utils/loggers.dart';
 
 class LrcHelper with FilePathResolverMixin {
   final Audiotagger _tagger = Audiotagger();
+  // final MusicController controller = Get.find<MusicController>();
 
-  Future<Map<String, dynamic>> initLrc(String contentUri) async {
+  /// Initializes LRC by retrieving external and internal lyrics.
+  Future<Map<String, String?>> initLrc(
+      {String contentUri = '', String? realPath}) async {
     msg("Initializing LRC for content URI: $contentUri", tag: 'LrcHelper');
 
+    if (contentUri.isEmpty && realPath == null) {
+      err("Content URI is empty", tag: 'LrcHelper');
+      return _getEmptyLyricsResult();
+    }
+
+    if (realPath == null && contentUri.isNotEmpty) {
+      realPath = await resolveContentUri(contentUri);
+    }
+
     try {
-      final lyricsResult = await grabLyrics(contentUri);
+      final lyricsResult = await grabLyrics(realPath: realPath);
 
-      // Check validity of both internal and external lyrics
-      lyricsResult['internal']['isSynced'] =
-          _isValidLrc(lyricsResult['internal']['lyrics']);
-      lyricsResult['external']['isSynced'] =
-          _isValidLrc(lyricsResult['external']['fileContent']);
-
-      // Try parsing external lyrics first if available and synced
-      if (lyricsResult['external']['hasExternal'] &&
-          lyricsResult['external']['isSynced']) {
-        try {
-          final content = lyricsResult['external']['fileContent'];
-          if (content != null && content.isNotEmpty) {
-            lyricsResult['external']['synced'] = Lrc.parse(content);
-            sucs("External LRC parsed successfully", tag: 'LrcHelper');
-          }
-        } catch (e, stackTrace) {
-          err("Failed to parse external LRC: $e",
-              tag: 'LrcHelper', stackTrace: stackTrace);
-          lyricsResult['external']['isSynced'] = false;
-        }
+      // Validate external lyrics
+      if (lyricsResult['external'] != null &&
+          isValidLrc(lyricsResult['external'])) {
+        sucs("External LRC is valid", tag: 'LrcHelper');
       }
 
-      // Try parsing internal lyrics if external failed or unavailable
-      if ((!lyricsResult['external']['isSynced'] ||
-              lyricsResult['external']['synced'] == null) &&
-          lyricsResult['internal']['hasInternal'] &&
-          lyricsResult['internal']['isSynced']) {
-        try {
-          final lyrics = lyricsResult['internal']['lyrics'];
-          if (lyrics != null && lyrics.isNotEmpty) {
-            lyricsResult['internal']['synced'] = Lrc.parse(lyrics);
-            sucs("Internal LRC parsed successfully", tag: 'LrcHelper');
-          }
-        } catch (e, stackTrace) {
-          err("Failed to parse internal LRC: $e",
-              tag: 'LrcHelper', stackTrace: stackTrace);
-          lyricsResult['internal']['isSynced'] = false;
-        }
+      // Validate internal lyrics
+      if (lyricsResult['internal'] != null &&
+          isValidLrc(lyricsResult['internal'])) {
+        sucs("Internal LRC is valid", tag: 'LrcHelper');
       }
 
       return lyricsResult;
     } catch (e, stackTrace) {
-      err("Error initializing LRC for URI: $contentUri : error is \n $e \n on line ${getErrorLocation(stackTrace)}",
-          tag: 'LrcHelper', stackTrace: stackTrace);
+      err(
+        "Error initializing LRC for URI: $contentUri : $e",
+        tag: 'LrcHelper',
+        stackTrace: stackTrace,
+      );
       return {
-        'external': {
-          'hasExternal': false,
-          'isSynced': false,
-          'synced': null,
-          'fileContent': null,
-        },
-        'internal': {
-          'hasInternal': false,
-          'isSynced': false,
-          'synced': null,
-          'lyrics': null,
-        },
+        'external': null,
+        'internal': null,
       };
     }
   }
 
-  Future<Map<String, dynamic>> grabLyrics(String songUri) async {
+  /// Retrieves external and internal lyrics.
+  Future<Map<String, String?>> grabLyrics(
+      {String songUri = '', String? realPath}) async {
     msg("Grabbing lyrics for song URI: $songUri", tag: 'LrcHelper');
 
-    String? realPath = await resolveContentUri(songUri);
     if (realPath == null) {
       err("Real path could not be resolved for URI: $songUri",
           tag: 'LrcHelper');
@@ -94,20 +74,17 @@ class LrcHelper with FilePathResolverMixin {
     };
   }
 
-  Future<Map<String, dynamic>> _getInternalLyrics(String filePath) async {
-    Map<String, dynamic> result = {
-      'hasInternal': false,
-      'isSynced': false,
-      'synced': null,
-      'lyrics': null,
-    };
-
+  /// Retrieves internal lyrics from metadata.
+  Future<String?> _getInternalLyrics(String filePath) async {
     try {
       Tag? tag = await _tagger.readTags(path: filePath);
-      if (tag?.lyrics != null && tag!.lyrics!.isNotEmpty) {
-        result['hasInternal'] = true;
-        result['lyrics'] = tag.lyrics;
-        sucs("Embedded lyrics found in metadata", tag: 'LrcHelper');
+
+      if (tag?.lyrics?.isNotEmpty == true) {
+        msg("Embedded lyrics found in metadata", tag: 'LrcHelper');
+        return tag!.lyrics;
+      } else {
+        msg("No embedded lyrics found in metadata", tag: 'LrcHelper');
+        return null;
       }
     } catch (e, stackTrace) {
       err(
@@ -115,65 +92,49 @@ class LrcHelper with FilePathResolverMixin {
         tag: 'LrcHelper',
         stackTrace: stackTrace,
       );
+      return null;
     }
-
-    return result;
   }
 
-  Future<Map<String, dynamic>> _getExternalLyrics(String filePath) async {
-    Map<String, dynamic> result = {
-      'hasExternal': false,
-      'isSynced': false,
-      'synced': null,
-      'fileContent': null,
-    };
-
+  /// Retrieves external lyrics from files.
+  Future<String?> _getExternalLyrics(String filePath) async {
     try {
       final songFile = File(filePath);
       final songDirectory = songFile.parent;
+      final baseName = songFile.uri.pathSegments.last.split('.').first;
       final possibleExtensions = ['lrc', 'srt'];
 
       for (var ext in possibleExtensions) {
-        final lyricsFile = File(
-            '${songDirectory.path}/${songFile.uri.pathSegments.last.split('.').first}.$ext');
+        final lyricsFile = File('${songDirectory.path}/$baseName.$ext');
 
         if (await lyricsFile.exists()) {
           final content = await lyricsFile.readAsString();
           if (content.isNotEmpty) {
-            result['hasExternal'] = true;
-            result['fileContent'] = content;
             sucs("External lyrics file found: ${lyricsFile.path}",
                 tag: 'LrcHelper');
-            break;
+            return content;
           }
         }
       }
+      msg("No external lyrics file found", tag: 'LrcHelper');
+      return null;
     } catch (e, stackTrace) {
       err("Error accessing external lyrics file: $e",
           tag: 'LrcHelper', stackTrace: stackTrace);
+      return null;
     }
-
-    return result;
   }
 
-  Map<String, dynamic> _getEmptyLyricsResult() {
+  /// Returns an empty lyrics result.
+  Map<String, String?> _getEmptyLyricsResult() {
     return {
-      'external': {
-        'hasExternal': false,
-        'isSynced': false,
-        'synced': null,
-        'fileContent': null,
-      },
-      'internal': {
-        'hasInternal': false,
-        'isSynced': false,
-        'synced': null,
-        'lyrics': null,
-      },
+      'external': null,
+      'internal': null,
     };
   }
 
-  bool _isValidLrc(String? lyricsContent) {
+  /// Validates LRC content.
+  bool isValidLrc(String? lyricsContent) {
     try {
       if (lyricsContent == null || lyricsContent.isEmpty) {
         msg("Lyrics content is empty or null", tag: 'LrcHelper');
@@ -188,4 +149,30 @@ class LrcHelper with FilePathResolverMixin {
       return false;
     }
   }
+
+  // Future<void> loadLyrics(String songUri) async {
+  //   controller.lyricsData.value = await LrcHelper().initLrc(songUri);
+
+  //   final lyricsData = controller.lyricsData.value;
+
+  //   // Check if external or internal lyrics are synchronized
+  //   if (lyricsData['external']) {
+  //     _syncLyrics(lyricsData['external']);
+  //   } else if (lyricsData['internal']) {
+  //     _syncLyrics(lyricsData['internal']);
+  //   }
+  // }
+
+  // // Synchronize lyrics by initializing LRC
+  // void _syncLyrics(String? rawLrc) async {
+  //   final isValidLrc = LrcHelper().isValidLrc(rawLrc);
+  //   late Lrc parsedLrc;
+  //   if (isValidLrc) {
+  //     parsedLrc = Lrc.parse(rawLrc!);
+  //     controller.isSyncedLrc.value = true;
+  //     msg("Syncing lyrics with LRC: $parsedLrc", tag: 'Synced lyrics');
+  //     controller.lyricsLines.assignAll(parsedLrc.lyrics);
+  //     controller.currentLineIndex.value = -1;
+  //   }
+  // }
 }

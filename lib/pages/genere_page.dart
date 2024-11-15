@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
+import 'package:thunder_audio_player/pages/inside_screen.dart';
 import 'package:thunder_audio_player/utils/loggers.dart';
 
 class GenresPage extends StatefulWidget {
@@ -107,57 +108,72 @@ class _GenresPageState extends State<GenresPage> {
   }
 
   Widget buildGenreItem(int index) {
-    return Card(
-      color: Colors.black12,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0, right: 5, left: 5, top: 2),
-        child: Column(
-          children: [
-            // Genre artwork container with fixed size 185x185
-            SizedBox(
-              height: 185,
-              width: 185,
-              child: QueryArtworkWidget(
-                id: genres[index].id,
-                type: ArtworkType.GENRE,
-                nullArtworkWidget: const Icon(
-                  Icons.queue_music_rounded,
-                  color: whiteColor,
-                  size: 80,
+    return GestureDetector(
+      onTap: () {
+        // Navigate to genre details page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => InsideScreen(
+              type: AudioModelType.genre,
+              model: genres[index],
+            ),
+          ),
+        );
+      },
+      child: Card(
+        color: Colors.black12,
+        child: Padding(
+          padding:
+              const EdgeInsets.only(bottom: 8.0, right: 5, left: 5, top: 2),
+          child: Column(
+            children: [
+              // Genre artwork container with fixed size 185x185
+              SizedBox(
+                height: 185,
+                width: 185,
+                child: QueryArtworkWidget(
+                  id: genres[index].id,
+                  type: ArtworkType.GENRE,
+                  nullArtworkWidget: const Icon(
+                    Icons.queue_music_rounded,
+                    color: whiteColor,
+                    size: 80,
+                  ),
+                  artworkBorder: BorderRadius.circular(25),
+                  artworkHeight: 185,
+                  artworkWidth: 185,
+                  format: ArtworkFormat.PNG,
+                  artworkFit: BoxFit.contain,
                 ),
-                artworkBorder: BorderRadius.circular(25),
-                artworkHeight: 185,
-                artworkWidth: 185,
-                format: ArtworkFormat.PNG,
-                artworkFit: BoxFit.contain,
               ),
-            ),
-            const SizedBox(height: 8),
-            // Genre name
-            Text(
-              genres[index].genre,
-              style: const TextStyle(
-                color: whiteColor,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 8),
+              // Genre name
+              Text(
+                genres[index].genre,
+                style: const TextStyle(
+                  color: whiteColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Number of tracks
-            Text(
-              '${genres[index].numOfSongs} tracks',
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
+              const SizedBox(height: 4),
+              // Number of tracks
+              Text(
+                '${genres[index].numOfSongs} tracks',
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                ),
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

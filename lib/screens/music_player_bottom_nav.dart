@@ -109,7 +109,9 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
                     case 0:
                       return _build_upNext_state();
                     case 1:
-                      return _build_lyrics_state();
+                      return controller.isSyncedLrc.value
+                          ? _build_synced_lyrics_state()
+                          : _build_normal_lyrics_state();
                     case 2:
                       return _build_details_state();
                     default:
@@ -168,12 +170,13 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
       physics: const BouncingScrollPhysics(),
       itemCount: songList.length,
       itemBuilder: (BuildContext context, int index) {
-        return buildSongItem(songs: songList, index: index);
+        return buildSongItem(
+            songs: songList, index: index, isUpcomingList: true);
       },
     );
   }
 
-  Widget _build_lyrics_state() {
+  Widget _build_synced_lyrics_state() {
     return Padding(
       padding: const EdgeInsets.only(top: 8, left: 12, right: 8, bottom: 8),
       child: Obx(() {
@@ -189,6 +192,28 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
                 fontSize: isActive ? 18 : 16,
                 fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                 color: isActive ? Colors.blueAccent : Colors.white,
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+
+  Widget _build_normal_lyrics_state() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, left: 12, right: 8, bottom: 8),
+      child: Obx(() {
+        return ListView.builder(
+          itemCount: controller.lyricsLines.length,
+          itemBuilder: (context, index) {
+            return Text(
+              controller.lyricsLines[index].lyrics,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.normal,
+                color: Colors.white,
               ),
             );
           },

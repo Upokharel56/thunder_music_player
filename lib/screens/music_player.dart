@@ -19,6 +19,9 @@ class MusicPlayer extends StatelessWidget
   MusicPlayer({super.key, required this.data, this.scrollController});
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
@@ -139,30 +142,45 @@ class MusicPlayer extends StatelessWidget
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(
-            Icons.playlist_add,
-            color: whiteColor,
-            size: 24,
+        Tooltip(
+          message: 'Add to Playlist',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.playlist_add,
+              color: whiteColor,
+              size: 24,
+            ),
           ),
         ),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(
-            Icons.favorite_border,
-            color: whiteColor,
-            size: 24,
+        Tooltip(
+          message: 'Add to Favorites',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
+            onPressed: () {},
+            icon: const Icon(
+              Icons.favorite_border,
+              color: whiteColor,
+              size: 24,
+            ),
           ),
         ),
-        IconButton(
-          onPressed: () {
-            controller.showVolumeSlider();
-          },
-          icon: const Icon(
-            Icons.volume_up_rounded,
-            color: whiteColor,
-            size: 24,
+        Tooltip(
+          message: 'Adjust Volume',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
+            onPressed: () {
+              controller.showVolumeSlider();
+            },
+            icon: const Icon(
+              Icons.volume_up_rounded,
+              color: whiteColor,
+              size: 24,
+            ),
           ),
         ),
       ],
@@ -201,57 +219,82 @@ class MusicPlayer extends StatelessWidget
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        IconButton(
-          onPressed: () {
-            controller.toggleShuffle();
-          },
-          icon: Icon(
-            controller.isShuffleActive.value ? Icons.shuffle : Icons.shuffle,
-            color: controller.isShuffleActive.value ? fadedWhite : whiteColor,
-          ),
-        ),
-        IconButton(
-          onPressed: () {
-            if (controller.currentIndex.value > 0) {
-              controller.playSongAt(controller.currentIndex.value - 1);
-            }
-          },
-          icon: const Icon(
-            Icons.skip_previous,
-            size: 40,
-            color: whiteColor,
-          ),
-        ),
-        IconButton(
+        Tooltip(
+          message: controller.isShuffleActive.value
+              ? 'Shuffle is on'
+              : 'Shuffle is off',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
             onPressed: () {
-              controller.togglePlay();
+              controller.toggleShuffle();
             },
             icon: Icon(
-              controller.isPlaying.value ? Icons.pause : Icons.play_arrow,
-              size: 55,
-              color: whiteColor,
-            )),
-        IconButton(
-          onPressed: () {
-            if (controller.currentIndex.value < data.length - 1) {
-              controller.playSongAt(controller.currentIndex.value + 1);
-            }
-          },
-          icon: const Icon(
-            Icons.skip_next,
-            size: 40,
-            color: whiteColor,
+              controller.isShuffleActive.value ? Icons.shuffle : Icons.shuffle,
+              color: controller.isShuffleActive.value ? whiteColor : fadedWhite,
+            ),
           ),
         ),
-        IconButton(
-          onPressed: () {
-            controller.toggleRepeat();
-          },
-          icon: Icon(
-            controller.isRepeatActive.value
-                ? Icons.repeat
-                : Icons.repeat_one_sharp,
-            color: whiteColor,
+        Tooltip(
+          message: 'Previous Song',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
+            onPressed: () {
+              controller.previous();
+            },
+            icon: const Icon(
+              Icons.skip_previous,
+              size: 40,
+              color: whiteColor,
+            ),
+          ),
+        ),
+        Tooltip(
+          message: controller.isPlaying.value ? 'Pause' : 'Play',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
+              onPressed: () {
+                controller.togglePlay();
+              },
+              icon: Icon(
+                controller.isPlaying.value ? Icons.pause : Icons.play_arrow,
+                size: 55,
+                color: whiteColor,
+              )),
+        ),
+        Tooltip(
+          message: 'Next Song',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
+            onPressed: () {
+              controller.next();
+            },
+            icon: const Icon(
+              Icons.skip_next,
+              size: 40,
+              color: whiteColor,
+            ),
+          ),
+        ),
+        Tooltip(
+          message: controller.isRepeatActive.value
+              ? 'Repeat is on'
+              : 'Repeat is off',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
+            onPressed: () {
+              controller.toggleRepeat();
+            },
+            icon: Icon(
+              controller.isRepeatActive.value
+                  ? Icons.repeat
+                  : Icons.repeat_one_sharp,
+              color: whiteColor,
+            ),
           ),
         ),
       ],
@@ -262,12 +305,17 @@ class MusicPlayer extends StatelessWidget
     return AppBar(
       foregroundColor: whiteColor,
       title: const Text('Thunder Storm'),
-      leading: IconButton(
-        onPressed: () {
-          Get.back();
-        },
-        icon:
-            const Icon(Icons.keyboard_arrow_down, size: 35, color: whiteColor),
+      leading: Tooltip(
+        message: 'Minimize Player',
+        textAlign: TextAlign.center,
+        triggerMode: TooltipTriggerMode.longPress,
+        child: IconButton(
+          onPressed: () {
+            Get.back();
+          },
+          icon: const Icon(Icons.keyboard_arrow_down,
+              size: 35, color: whiteColor),
+        ),
       ),
       actions: [_buildAppBarActionBtns()],
     );
@@ -276,25 +324,94 @@ class MusicPlayer extends StatelessWidget
   Widget _buildAppBarActionBtns() {
     return Row(
       children: [
-        Obx(() => IconButton(
-              onPressed: () {
-                // Single toggle function instead of separate mute/unmute
-                controller.toggleMute();
-              },
-              icon: Icon(
-                controller.isMuted.value ? Icons.volume_off : Icons.volume_up,
-                color: whiteColor,
-              ),
-            )),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.info_outline, color: whiteColor),
+        Tooltip(
+          message: controller.isMuted.value ? 'Unmute' : 'Mute',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: Obx(() => IconButton(
+                onPressed: () {
+                  // Single toggle function instead of separate mute/unmute
+                  controller.toggleMute();
+                },
+                icon: Icon(
+                  controller.isMuted.value ? Icons.volume_off : Icons.volume_up,
+                  color: whiteColor,
+                ),
+              )),
         ),
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.more_vert, color: whiteColor),
+        Tooltip(
+          message: 'Info',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
+            onPressed: () async {
+              await showInfoDialog();
+            },
+            icon: const Icon(Icons.info_outline, color: whiteColor),
+          ),
+        ),
+        Tooltip(
+          message: 'More options',
+          textAlign: TextAlign.center,
+          triggerMode: TooltipTriggerMode.longPress,
+          child: IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.more_vert, color: whiteColor),
+          ),
         ),
       ],
+    );
+  }
+
+// Helper function to capitalize the first letter
+  String capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
+  }
+
+  Future<void> showInfoDialog() async {
+    Map infoMap = controller.currentAudioInfo;
+
+    await Get.dialog(
+      Dialog(
+        backgroundColor: whiteColor,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.7),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: infoMap.entries.map((entry) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${capitalize(entry.key)}:',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: blackColor,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${entry.value}',
+                      style: const TextStyle(
+                        color: blackColor,
+                      ),
+                    ),
+                    const Divider(color: Colors.white54),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+      barrierDismissible: true,
     );
   }
 }

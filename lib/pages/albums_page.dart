@@ -11,7 +11,8 @@ class AlbumsPage extends StatefulWidget {
   State<AlbumsPage> createState() => _AlbumsPageState();
 }
 
-class _AlbumsPageState extends State<AlbumsPage> {
+class _AlbumsPageState extends State<AlbumsPage>
+    with AutomaticKeepAliveClientMixin {
   final OnAudioQuery _audioQuery = OnAudioQuery();
   List<AlbumModel> albums = [];
   bool isLoading = true;
@@ -40,8 +41,13 @@ class _AlbumsPageState extends State<AlbumsPage> {
     }
   }
 
+  // @override
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
       backgroundColor: bgColor,
       body: RefreshIndicator(

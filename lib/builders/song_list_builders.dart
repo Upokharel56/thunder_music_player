@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/controllers/music_controller.dart';
+import 'package:thunder_audio_player/utils/loggers.dart';
 
 mixin SongListBuilders {
   final MusicController controller = Get.find<MusicController>();
@@ -39,11 +40,26 @@ mixin SongListBuilders {
           onTap: () {
             // Start playback and open the player as a modal overlay
             if (!isUpcomingList) {
+              msg("Song list tapped at index: $index",
+                  tag: 'Song List Not Upcoming');
+
+              controller.pause();
               controller.startNewStream(songs, index);
               controller.isMiniPlayerActive.value = true;
               return;
+            } else {
+              msg("Upcoming list tapped at index: $index",
+                  tag: 'Upcoming List');
+
+              try {
+                controller.playSongAt(index);
+              } catch (e) {
+                err("Error playing song at index: $index ",
+                    tag: 'Upcoming List');
+                err(e.toString(), tag: 'Upcoming List tap error ');
+              }
+              return;
             }
-            controller.playSongAt(index);
           },
           tileColor: bgColor,
           title: Text(

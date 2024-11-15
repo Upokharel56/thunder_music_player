@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/builders/song_list_builders.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
+import 'package:thunder_audio_player/utils/loggers.dart';
 
 class AllSongsPage extends StatefulWidget {
   const AllSongsPage({super.key});
@@ -10,13 +11,16 @@ class AllSongsPage extends StatefulWidget {
   _AllSongsPageState createState() => _AllSongsPageState();
 }
 
-class _AllSongsPageState extends State<AllSongsPage> with SongListBuilders {
+class _AllSongsPageState extends State<AllSongsPage>
+    with SongListBuilders, AutomaticKeepAliveClientMixin {
   final OnAudioQuery audioQuery = OnAudioQuery();
 
   List<SongModel> songList = [];
   // final String _sortValue = 'name';
   SongSortType _sortType = SongSortType.TITLE;
   OrderType _orderType = OrderType.ASC_OR_SMALLER;
+
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -26,11 +30,17 @@ class _AllSongsPageState extends State<AllSongsPage> with SongListBuilders {
 
   Future<void> _loadSongs() async {
     songList = await _getSongList();
+    msg('Songs loaded: ${songList.length}', tag: 'AllSongsPage');
+    isLoading = false;
     setState(() {});
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return Scaffold(
         backgroundColor: bgColor,
         body: RefreshIndicator(
@@ -158,8 +168,14 @@ class _AllSongsPageState extends State<AllSongsPage> with SongListBuilders {
   }
 
   Widget _buildSongsLayout() {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     if (songList.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: Text('No songs found'));
     }
     return Padding(
       padding: const EdgeInsets.all(8.0),
