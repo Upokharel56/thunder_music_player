@@ -98,8 +98,8 @@ This app is a personal learning project, but contributions, suggestions, and fee
 ## 📬 Contact  
 
 Feel free to reach out if you have any feedback, questions, or just want to say hi!  
-- **Email**: [razzacharya6@gmail.com](mailto:iamgroot56u+collab@gmail.com)  
-- **GitHub**: [Your GitHub Profile](https://github.com/Upokharel56/)  
+- **Email**: [iamgroot56u+collab@gmail.com](mailto:iamgroot56u+collab@gmail.com)  
+- **GitHub**: [Upokharel56](https://github.com/Upokharel56/)  
 
 ---
 
