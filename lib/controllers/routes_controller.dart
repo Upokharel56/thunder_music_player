@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
 
 class RoutesController extends GetxController {
-  var activeLink = 'Songs'.obs;
-  final List<String> history = ['Songs']; // Start with the initial tab
+  var activeLink = 'Favourites'.obs;
+  final List<String> history = ['Favourites']; // Start with the initial tab
 
   void setActiveLink(String link) {
     if (activeLink.value != link) {

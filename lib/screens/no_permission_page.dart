@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
-import 'package:thunder_audio_player/consts/utils.dart';
+import 'package:thunder_audio_player/utils/utils.dart';
 
 class NoPermissionPage extends StatefulWidget {
   const NoPermissionPage({super.key});

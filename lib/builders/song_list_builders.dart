@@ -109,14 +109,24 @@ mixin SongListBuilders {
             artworkWidth: 50,
             artworkBorder: const BorderRadius.all(Radius.circular(8)),
           ),
-          trailing:
-              controller.currentIndex == index && controller.isPlaying.value
-                  ? const Icon(
-                      Icons.pause_circle,
-                      color: whiteColor,
-                      size: 38,
-                    )
-                  : null,
+          trailing: controller.currentIndex == index
+              ? IconButton(
+                  icon: controller.isPlaying.value
+                      ? const Icon(
+                          Icons.pause_circle,
+                          color: whiteColor,
+                          size: 38,
+                        )
+                      : const Icon(
+                          Icons.play_circle,
+                          color: whiteColor,
+                          size: 38,
+                        ),
+                  onPressed: () {
+                    controller.togglePlay();
+                  },
+                )
+              : null,
         ),
       ),
     );

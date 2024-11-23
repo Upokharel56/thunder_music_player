@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:thunder_audio_player/consts/styles.dart';
-import 'package:thunder_audio_player/consts/utils.dart';
+import 'package:thunder_audio_player/pages/favourite_page.dart';
+import 'package:thunder_audio_player/utils/utils.dart';
 import 'package:thunder_audio_player/screens/homePage.dart';
 import 'package:thunder_audio_player/screens/no_permission_page.dart';
 import 'package:thunder_audio_player/utils/app_bindings.dart';
@@ -15,11 +17,13 @@ void main() async {
   final status = await Utils.requestPermission();
 
   await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.example.app.audio',
-    androidNotificationChannelName: 'Audio Playback',
-    androidNotificationOngoing: true,
-  );
+      androidNotificationChannelId: 'com.example.app.audio',
+      androidNotificationChannelName: 'Audio Playback',
+      androidNotificationOngoing: true,
+      preloadArtwork: true,
+      notificationColor: const Color.fromARGB(255, 104, 191, 253));
 
+  await GetStorage.init();
   if (status) {
     runApp(const MyApp());
     // await OnAudioQuery().querySongs();
@@ -42,6 +46,10 @@ class MyApp extends StatelessWidget {
       home: Homepage(),
       onGenerateRoute: (settings) {
         switch (settings.name) {
+          case '/favorites':
+            return MaterialPageRoute(
+                builder: (context) => const FavouritePage());
+
           case '/homepage':
             return MaterialPageRoute(builder: (context) => Homepage());
           case '/playlists':

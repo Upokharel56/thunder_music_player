@@ -6,14 +6,14 @@ import 'package:thunder_audio_player/builders/song_list_builders.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/controllers/music_controller.dart';
 import 'package:thunder_audio_player/pages/all_songs_page.dart';
+import 'package:thunder_audio_player/pages/favourite_page.dart';
 import 'package:thunder_audio_player/pages/genere_page.dart';
-import 'package:thunder_audio_player/routes/routes_controller.dart';
+import 'package:thunder_audio_player/controllers/routes_controller.dart';
+import 'package:thunder_audio_player/screens/mini_music_player.dart';
 import 'package:thunder_audio_player/screens/music_player.dart';
 import 'package:thunder_audio_player/utils/loggers.dart';
-import 'package:thunder_audio_player/utils/mini_player.dart';
 import 'package:thunder_audio_player/pages/albums_page.dart';
 import 'package:thunder_audio_player/pages/artists_page.dart';
-import 'package:thunder_audio_player/pages/playlist_page.dart';
 
 class Homepage extends StatefulWidget {
   Homepage({super.key});
@@ -26,7 +26,7 @@ class Homepage extends StatefulWidget {
   State<Homepage> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage> with MiniPlayer, SongListBuilders {
+class _HomepageState extends State<Homepage> with SongListBuilders {
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -53,8 +53,7 @@ class _HomepageState extends State<Homepage> with MiniPlayer, SongListBuilders {
                                 songs: widget.controller.songs);
                           }
                         },
-                        child: buildMiniPlayer(
-                          context,
+                        child: MiniMusicPlayer(
                           showDismiss: true,
                           tapAction: () {
                             _showMusicPlayerModal(context,
@@ -72,6 +71,8 @@ class _HomepageState extends State<Homepage> with MiniPlayer, SongListBuilders {
   Widget _buildContentBasedOnRoute() {
     return Obx(() {
       switch (widget.routesController.activeLink.value) {
+        case 'Favourites':
+          return const FavouritePage(); // Replace with actual Favourites widget
         case 'Albums':
           return const AlbumsPage(); // Replace with actual Albums widget
         case 'Artists':
@@ -154,6 +155,7 @@ class _HomepageState extends State<Homepage> with MiniPlayer, SongListBuilders {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: <Widget>[
+            _buildNavLink('Favourites', '/favourites'),
             _buildNavLink('Songs', '/homepage'),
             _buildNavLink('Albums', '/albums'),
             _buildNavLink('Artists', '/artists'),

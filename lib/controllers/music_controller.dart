@@ -1,21 +1,14 @@
 import 'dart:async';
-
 import 'package:get/get.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
-import 'package:lrc/lrc.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/helpers/lrc_helpers.dart';
-import 'package:thunder_audio_player/platform_channels/android/file_path_helper.dart';
-
 import 'package:thunder_audio_player/utils/loggers.dart';
-
 import 'package:thunder_audio_player/platform_channels/android/volume_controls.dart';
 
-class MusicController extends GetxController
-    with VolumeControls, FilePathResolverMixin {
-  // final OnAudioQuery _audioQuery = OnAudioQuery();
-  final AudioPlayer _audioPlayer = AudioPlayer();
+class MusicController extends GetxController with VolumeControls {
+  final AudioPlayer audioPlayer = AudioPlayer();
   final RxList<SongModel> songs = <SongModel>[].obs; // Observable list of songs
   final RxInt currentIndex = 0.obs; // Current index of the song
   final RxBool isPlaying = false.obs; // Track if audio is playing
@@ -36,14 +29,14 @@ class MusicController extends GetxController
   var max = 0.0.obs;
   var value = 0.0.obs;
 
+  final playbackspeed = 1.0.obs;
+
 //Lyrics variables for lrc contents
   final LrcHelper lrcHelper = LrcHelper();
   final lyricsData = {}.obs; // Observable map for the lyrics structure
   final lyricsLines = [].obs; // List of parsed timestamps and lyrics
   final RxInt currentLineIndex =
       (-1).obs; // Observable index for the current line
-
-  final RxBool isSyncedLrc = false.obs;
 
   //Stream listeners for listening players stream and updating UI
   late StreamSubscription<Duration?> _durationSubscription;
@@ -53,6 +46,10 @@ class MusicController extends GetxController
 
   //Current playing audio information map
   final currentAudioInfo = {}.obs;
+
+  var currentDuration = Duration.zero.obs;
+  final RxBool isSyncedLyrics = false.obs;
+  final RxString lyrics = ''.obs;
 
   @override
   void onInit() {
@@ -64,7 +61,7 @@ class MusicController extends GetxController
       List<SongModel> songsList, int? startIndex) async {
     startIndex ??= 0;
 
-    await _audioPlayer.stop();
+    await audioPlayer.stop();
 
     songs.clear();
     songs.addAll(songsList);
@@ -76,7 +73,7 @@ class MusicController extends GetxController
         tag: MediaItem(
           id: song.id.toString(),
           album: song.album ?? "Unknown Album",
-          title: song.title ?? "Unknown Title",
+          title: song.title,
           artist: song.artist ?? "Unknown Artist",
         ),
       );
@@ -84,21 +81,18 @@ class MusicController extends GetxController
 
     final playlist = ConcatenatingAudioSource(children: audioSources);
     listenToPlayerStreams();
-    await _audioPlayer.setAudioSource(playlist, initialIndex: startIndex);
+    await audioPlayer.setAudioSource(playlist, initialIndex: startIndex);
     await play();
   }
 
 // Play a specific song and load its lyrics
   Future<void> playSongAt(int index) async {
-    late String uri;
     try {
       // Seek to the desired index within the playlist
-      await _audioPlayer.seek(Duration.zero, index: index);
-      await _audioPlayer.play();
+      await audioPlayer.seek(Duration.zero, index: index);
+      await audioPlayer.play();
       isPlaying.value = true;
       currentIndex.value = index;
-
-      listenToPlayerStreams();
     } catch (e) {
       err("Error playing song: $e");
     }
@@ -106,47 +100,40 @@ class MusicController extends GetxController
 
 // Position and duration listeners to update the UI slider
   Future<void> listenToPlayerStreams() async {
+    //
     // Listen to duration changes
-    _durationSubscription = _audioPlayer.durationStream.listen((d) {
+    _durationSubscription = audioPlayer.durationStream.listen((d) {
       if (d != null) {
         duration.value = d.toString().split('.')[0];
         max.value = d.inSeconds.toDouble();
+        currentDuration.value = d;
       }
     });
 
     // Listen to position changes
-    _positionSubscription = _audioPlayer.positionStream.listen((p) {
+    _positionSubscription = audioPlayer.positionStream.listen((p) {
       position.value = p.toString().split('.')[0];
       value.value = p.inSeconds.toDouble();
-
-      if (isSyncedLrc.value) {
-        _updateCurrentLine(p);
-      }
     });
 
     // Listen to player state changes
-    _playerStateSubscription = _audioPlayer.playerStateStream.listen((event) {
-      // Update playing state
+    _playerStateSubscription = audioPlayer.playerStateStream.listen((event) {
       isPlaying.value = event.playing;
 
       // Handle processing state changes
       switch (event.processingState) {
-        case ProcessingState.completed:
-          // The player has completed playing the current track With LoopMode and ShuffleMode properly set, the player will handle what's next itself
-          break;
-
         case ProcessingState.idle:
           isPlaying.value = false;
           break;
 
         default:
-          // Handle other states if necessary
+          isPlaying.value = event.playing;
           break;
       }
     });
 
     // Listen to currentIndex changes
-    _currentIndexSubscription = _audioPlayer.currentIndexStream.listen((index) {
+    _currentIndexSubscription = audioPlayer.currentIndexStream.listen((index) {
       if (index != null) {
         currentIndex.value = index;
         updateCurrentAudioInfo(index);
@@ -159,8 +146,6 @@ class MusicController extends GetxController
   void updateCurrentAudioInfo(int index) async {
     final currentSong = songs[index];
 
-    msg("Current song: $currentSong", tag: 'Updating Current Song info');
-
     currentAudioInfo.value = {
       'title': currentSong.title,
       'artist': currentSong.artist,
@@ -169,17 +154,26 @@ class MusicController extends GetxController
           .toString()
           .split('.')[0],
       'genre': currentSong.genre,
-      'path': await getRealPath(currentSong.uri!),
+      'path': currentSong.data,
       'size': "${(currentSong.size / 1024 / 1024).toStringAsFixed(2)} MB",
     };
-
-    sucs("Current audio info updated: $currentAudioInfo",
-        tag: 'Current Audio Info');
   }
 
-  Future<void> seekDuration(seconds) async {
-    var duration = Duration(seconds: seconds);
-    _audioPlayer.seek(duration);
+  Future<void> seekDuration(int seconds) async {
+    final duration = audioPlayer.duration;
+
+    if (duration == null) return;
+
+    final currentPosition = audioPlayer.position;
+    final newPosition = currentPosition + Duration(seconds: seconds);
+
+    if (newPosition < Duration.zero) {
+      await audioPlayer.seek(Duration.zero);
+    } else if (newPosition > duration) {
+      await audioPlayer.seek(duration);
+    } else {
+      await audioPlayer.seek(newPosition);
+    }
   }
 
   Future<void> togglePlay() async {
@@ -189,25 +183,30 @@ class MusicController extends GetxController
   // Pause the current song
   Future<void> pause() async {
     isPlaying.value = false;
-    await _audioPlayer.pause();
+    await audioPlayer.pause();
   }
 
   Future<void> play() async {
     isPlaying.value = true;
-    await _audioPlayer.play();
+    await audioPlayer.play();
   }
 
   Future<void> stop() async {
-    await _audioPlayer.stop();
+    await audioPlayer.stop();
     isPlaying.value = false;
   }
 
   Future<void> next() async {
-    await _audioPlayer.seekToNext();
+    await audioPlayer.seekToNext();
   }
 
   Future<void> previous() async {
-    await _audioPlayer.seekToPrevious();
+    await audioPlayer.seekToPrevious();
+  }
+
+  void changePlaybackSpeed(double speed) {
+    audioPlayer.setSpeed(speed);
+    playbackspeed.value = speed;
   }
 
   void toggleShuffle() async {
@@ -216,9 +215,9 @@ class MusicController extends GetxController
     // Disable repeat if shuffle is activated
     if (isShuffleActive.value) {
       isRepeatActive.value = false;
-      await _audioPlayer.setLoopMode(LoopMode.off);
+      await audioPlayer.setLoopMode(LoopMode.off);
     }
-    await _audioPlayer.setShuffleModeEnabled(isShuffleActive.value);
+    await audioPlayer.setShuffleModeEnabled(isShuffleActive.value);
   }
 
   void toggleRepeat() async {
@@ -227,11 +226,11 @@ class MusicController extends GetxController
     // Disable shuffle if repeat is activated
     if (isRepeatActive.value) {
       isShuffleActive.value = false;
-      await _audioPlayer.setShuffleModeEnabled(false);
+      await audioPlayer.setShuffleModeEnabled(false);
     }
 
     // Set loop mode on the player
-    await _audioPlayer.setLoopMode(
+    await audioPlayer.setLoopMode(
       isRepeatActive.value ? LoopMode.one : LoopMode.off,
     );
   }
@@ -249,15 +248,9 @@ class MusicController extends GetxController
 //
 //
 
-  Future<String> getRealPath(String contentUri) async {
-    String? realPath = await resolveContentUri(contentUri);
-
-    return realPath ?? "";
-  }
-
   // Load and parse lyrics for the song
   Future<void> loadLyricsAt(int index) async {
-    final String songUri = songs[currentIndex.value].uri ?? '';
+    final String songUri = songs[currentIndex.value].data ?? '';
 
     if (songUri.isEmpty) {
       err("Song URI is empty", tag: 'Lyrics Error');
@@ -266,8 +259,7 @@ class MusicController extends GetxController
 
     try {
       // Initialize lyrics data with external and internal lyrics content
-      lyricsData.value =
-          await lrcHelper.initLrc(realPath: currentAudioInfo['path']);
+      lyricsData.value = await lrcHelper.initLrc(realPath: songUri);
     } catch (e) {
       err("Error initializing lyrics URI: $e", tag: 'Uri Init Error');
       return;
@@ -282,13 +274,13 @@ class MusicController extends GetxController
     try {
       // Prioritize external lyrics over internal lyrics
       if (lyricsData['external'] != null) {
-        msg("Syncing External lyrics inside loadLyrics function",
-            tag: 'Syncing Lyrics');
+        msg("Syncing external lyrics:}", tag: 'External Lyrics Sync');
         _syncLyrics(lyricsData['external']);
+        return;
       } else if (lyricsData['internal'] != null) {
-        msg("Syncing Internal lyrics inside loadLyrics function",
-            tag: 'Syncing Lyrics');
+        msg("Syncing internal lyrics: ", tag: ' Internal Lyrics Sync');
         _syncLyrics(lyricsData['internal']);
+        return;
       }
     } catch (e) {
       err("Error syncing lyrics inside loadLyrics function: $e",
@@ -300,7 +292,19 @@ class MusicController extends GetxController
   void _syncLyrics(String? rawLrc) async {
     late bool isValidLrc;
     try {
+      rawLrc = lrcHelper.cleanLrc(rawLrc ?? '', cleanBlankLines: true);
+
+      if (rawLrc.isEmpty) {
+        return null;
+      }
+
       isValidLrc = lrcHelper.isValidLrc(rawLrc);
+      msg("LRC validation result: $isValidLrc \n\n", tag: '_syncLyrics');
+      isSyncedLyrics.value = isValidLrc;
+      lyrics.value = rawLrc;
+      msg("Is synced value after sync: ${isSyncedLyrics.value}",
+          tag: '_syncLyrics changes');
+      return;
     } catch (e) {
       err(
         "Error validating LRC content inside _syncLyrics function: $e",
@@ -308,66 +312,12 @@ class MusicController extends GetxController
       );
       return null;
     }
-
-    late Lrc parsedLrc;
-    try {
-      if (isValidLrc) {
-        parsedLrc = Lrc.parse(rawLrc!);
-        msg("Lyrics validated successfully and parsed \n ",
-            tag: 'Lyrics parsing ~ _syncLyrics');
-        isSyncedLrc.value = true;
-
-        msg("Syncing lyrics with LRC: $parsedLrc", tag: 'Synced lyrics');
-        lyricsLines.assignAll(parsedLrc.lyrics);
-        currentLineIndex.value = -1;
-      } else {
-        Map unsyncedData = {
-          "lyrics": rawLrc,
-        };
-        isSyncedLrc.value = false;
-
-        lyricsLines.clear();
-        lyricsLines.add(unsyncedData);
-      }
-    } catch (e) {
-      err("Error Syncing  LRC inside _syncLyrics function: $e",
-          tag: 'Lyrics Sync Error');
-    }
-  }
-
-  // Update current line based on the position of the audio
-  void _updateCurrentLine(Duration position) {
-    if (lyricsLines.isEmpty) {
-      err("Lyrics lines are empty", tag: 'Update Lyrics');
-      return; // Add this check
-    }
-
-    if (!isSyncedLrc.value) {
-      err("Lyrics are not synced", tag: 'Update Lyrics');
-      return;
-    }
-
-    try {
-      for (int i = 0; i < lyricsLines.length; i++) {
-        final line = lyricsLines[i];
-        final nextLineTime = i + 1 < lyricsLines.length
-            ? lyricsLines[i + 1].timestamp
-            : Duration.zero;
-
-        // Check if the current position falls within this line's timestamp
-        if (position >= line.timestamp && position < nextLineTime) {
-          currentLineIndex.value = i;
-          break;
-        }
-      }
-    } catch (e) {
-      err("Error updating current line: $e", tag: 'Lyrics Error');
-    }
   }
 
   @override
   void onClose() {
-    _audioPlayer.dispose();
+    _stopListeningPlayerStreams();
+    audioPlayer.dispose();
     super.onClose();
   }
 }

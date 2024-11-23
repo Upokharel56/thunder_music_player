@@ -3,23 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/builders/song_list_builders.dart';
-import 'package:thunder_audio_player/controllers/music_controller.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
+import 'package:thunder_audio_player/controllers/storage/favouraite_songs_controller.dart';
+import 'package:thunder_audio_player/pages/inside_screen.dart';
 import 'package:thunder_audio_player/screens/music_player_bottom_nav.dart';
-import 'package:thunder_audio_player/utils/mini_player.dart';
-// import '../utils/loggers.dart';
 
-class MusicPlayer extends StatelessWidget
-    with MusicPlayerBottomNav, MiniPlayer, SongListBuilders {
+class MusicPlayer extends StatelessWidget with SongListBuilders {
   final List<SongModel> data;
   final ScrollController? scrollController;
-  @override
-  // final MusicController controller = Get.find<MusicController>();
+
+  final FavouriteSongsController favController =
+      Get.find<FavouriteSongsController>();
 
   MusicPlayer({super.key, required this.data, this.scrollController});
-
-  @override
-  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +23,7 @@ class MusicPlayer extends StatelessWidget
       backgroundColor: bgColor,
       appBar: _buildPlayerAppBar(),
       body: _build_body(),
-      bottomNavigationBar: buildBottomNavigationBar(),
+      bottomNavigationBar: const MusicPlayerBottomNav(),
     );
   }
 
@@ -72,9 +68,27 @@ class MusicPlayer extends StatelessWidget
             controller.previous();
           }
         },
+        onDoubleTapDown: (TapDownDetails details) {
+          final RenderBox box = Get.context!.findRenderObject() as RenderBox;
+          final Offset localOffset = box.globalToLocal(details.globalPosition);
+          final double halfWidth = box.size.width / 2;
+          final double centerRange =
+              box.size.width * 0.1; // 10% range around the center
+
+          if (localOffset.dx > halfWidth - centerRange &&
+              localOffset.dx < halfWidth + centerRange) {
+            controller.togglePlay();
+          } else if (localOffset.dx > halfWidth) {
+            // Double-tapped on the right side
+            controller.seekDuration(10);
+          } else {
+            // Double-tapped on the left side
+            controller.seekDuration(-10);
+          }
+        },
         child: Container(
-          height: controller.isPlaying.value ? 300 : 230,
-          width: controller.isPlaying.value ? 300 : 230,
+          height: controller.isPlaying.value ? 350 : 280,
+          width: controller.isPlaying.value ? 350 : 280,
           decoration: const BoxDecoration(
             borderRadius: BorderRadius.all(Radius.circular(35)),
             color: blackColor,
@@ -82,11 +96,9 @@ class MusicPlayer extends StatelessWidget
           child: QueryArtworkWidget(
             id: data[controller.currentIndex.value].id,
             artworkQuality: FilterQuality.high,
-            // artworkHeight: 330,
-            // artworkWidth: 330,
+            format: ArtworkFormat.PNG,
             type: ArtworkType.AUDIO,
             artworkFit: BoxFit.contain,
-            // artworkColor: blackColor,
             nullArtworkWidget: const Icon(
               Icons.music_note,
               size: 100,
@@ -155,19 +167,27 @@ class MusicPlayer extends StatelessWidget
             ),
           ),
         ),
-        Tooltip(
-          message: 'Add to Favorites',
-          textAlign: TextAlign.center,
-          triggerMode: TooltipTriggerMode.longPress,
-          child: IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.favorite_border,
-              color: whiteColor,
-              size: 24,
+        Obx(() {
+          bool isFav = favController
+              .contains(controller.songs[controller.currentIndex.value].id);
+
+          return Tooltip(
+            message: isFav ? 'Add to Favorites' : 'Remove from Favorites',
+            textAlign: TextAlign.center,
+            triggerMode: TooltipTriggerMode.longPress,
+            child: IconButton(
+              onPressed: () {
+                favController
+                    .addSong(controller.songs[controller.currentIndex.value]);
+              },
+              icon: Icon(
+                Icons.favorite_border,
+                color: isFav ? redColor : whiteColor,
+                size: 24,
+              ),
             ),
-          ),
-        ),
+          );
+        }),
         Tooltip(
           message: 'Adjust Volume',
           textAlign: TextAlign.center,
@@ -304,7 +324,19 @@ class MusicPlayer extends StatelessWidget
   AppBar _buildPlayerAppBar() {
     return AppBar(
       foregroundColor: whiteColor,
-      title: const Text('Thunder Storm'),
+      title: Obx(() {
+        try {
+          return Text(
+            controller.currentAudioInfo['title'],
+            style: const TextStyle(
+              color: whiteColor,
+              fontSize: 16,
+            ),
+          );
+        } catch (e) {
+          return const Text('Thunder Storm ');
+        }
+      }),
       leading: Tooltip(
         message: 'Minimize Player',
         textAlign: TextAlign.center,
@@ -354,13 +386,66 @@ class MusicPlayer extends StatelessWidget
           message: 'More options',
           textAlign: TextAlign.center,
           triggerMode: TooltipTriggerMode.longPress,
-          child: IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_vert, color: whiteColor),
-          ),
+          child: PopupMenuButton<String>(
+              itemBuilder: (context) => _build_more_options_layout(context),
+              onSelected: (value) => handleMoreOptions(value)),
         ),
       ],
     );
+  }
+
+  handleMoreOptions(value) {
+    switch (value) {
+      case 'Go to Artist':
+        MaterialPageRoute(
+            builder: (context) => InsideScreen(
+                  model: {
+                    'id': controller
+                        .songs[controller.currentIndex.value].artistId,
+                  },
+                  type: AudioModelType.artist,
+                ));
+        break;
+      case 'Go to Album':
+        MaterialPageRoute(
+            builder: (context) => InsideScreen(
+                  model: {
+                    'id':
+                        controller.songs[controller.currentIndex.value].albumId,
+                  },
+                  type: AudioModelType.album,
+                ));
+        break;
+      case 'Song Info':
+        showInfoDialog();
+        break;
+      case 'Speed':
+        showPlaybackSpeedDialog();
+        break;
+      default:
+        break;
+    }
+  }
+
+  List<PopupMenuEntry<String>> _build_more_options_layout(context) {
+    return [
+      const PopupMenuItem<String>(
+        value: 'Go to Artist',
+        child: Text('Go to Artist'),
+      ),
+      const PopupMenuItem<String>(
+        value: 'Go to Album',
+        child: Text('Go to Album'),
+      ),
+      const PopupMenuItem<String>(
+        value: 'Song Info',
+        child: Text('Song Info'),
+      ),
+      const PopupMenuItem<String>(
+        value: 'Speed',
+        child: Text('Speed'),
+      ),
+    ];
   }
 
 // Helper function to capitalize the first letter
@@ -408,6 +493,47 @@ class MusicPlayer extends StatelessWidget
                 );
               }).toList(),
             ),
+          ),
+        ),
+      ),
+      barrierDismissible: true,
+    );
+  }
+
+  Future<void> showPlaybackSpeedDialog() async {
+    await Get.dialog(
+      Dialog(
+        insetAnimationDuration: Durations.short4,
+        backgroundColor: blackColor,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: whiteColor,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Playback Speed',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: blackColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Slider(
+                value: controller.playbackspeed.value,
+                onChanged: (value) {
+                  controller.changePlaybackSpeed(value);
+                },
+                min: 0.5,
+                max: 2.0,
+                divisions: 15,
+                label: controller.playbackspeed.value.toStringAsFixed(1),
+              ),
+            ],
           ),
         ),
       ),

@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:on_audio_query/on_audio_query.dart';
-import 'package:thunder_audio_player/builders/song_list_builders.dart';
+import 'package:thunder_audio_player/builders/song_list_builders.dart'
+    show SongListBuilders;
 import 'package:thunder_audio_player/consts/colors.dart';
-// import 'package:thunder_audio_player/controllers/music_controller.dart';
-import 'package:thunder_audio_player/utils/mini_player.dart';
+import 'package:thunder_audio_player/screens/current_song_screen/details_screen.dart';
+import 'package:thunder_audio_player/screens/current_song_screen/normal_lyrics_screen.dart';
+import 'package:thunder_audio_player/screens/current_song_screen/synced_lyrics_screen.dart';
+import 'package:thunder_audio_player/screens/current_song_screen/upcoming_songs_list.dart';
+import 'package:thunder_audio_player/screens/mini_music_player.dart';
+import 'package:thunder_audio_player/utils/loggers.dart';
 
-mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
+class MusicPlayerBottomNav extends StatefulWidget {
+  const MusicPlayerBottomNav({super.key});
+
+  @override
+  _MusicPlayerBottomNavState createState() => _MusicPlayerBottomNavState();
+}
+
+class _MusicPlayerBottomNavState extends State<MusicPlayerBottomNav>
+    with SongListBuilders {
+  final RxInt selectedIndex = 0.obs;
   // final MusicController controller = Get.find<MusicController>();
-  final RxInt selectedIndex = 0.obs; // Track selected index
 
-  Widget buildBottomNavigationBar() {
+  @override
+  Widget build(BuildContext context) {
     return Obx(
       () => Container(
         color: bgColor,
@@ -33,14 +46,11 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
       onTap: () {
         selectedIndex.value = index;
         showFullScreenPopup();
-        // Show full-screen popup when tapped
       },
       onHorizontalDragEnd: (DragEndDetails details) {
         if (details.primaryVelocity! < 0) {
-          // Swiped Left - Next Song
           selectedIndex.value = index == 2 ? index : index + 1;
         } else if (details.primaryVelocity! > 0) {
-          // Swiped Right - Previous Song
           selectedIndex.value = index == 0 ? index : index - 1;
         }
       },
@@ -52,7 +62,7 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
             style: TextStyle(
               color: whiteColor,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: isSelected ? 16 : 14,
+              fontSize: isSelected ? 22 : 18,
             ),
           ),
           if (isSelected)
@@ -77,19 +87,19 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
       ),
       builder: (BuildContext context) {
         return SizedBox(
-          height:
-              MediaQuery.of(context).size.height * 0.99, // Nearly full screen
+          height: MediaQuery.of(context).size.height * 0.99,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Mini music player bar with music info and controls
-              buildMiniPlayer(context, tapAction: () {
-                Navigator.pop(context);
-              }),
-              // Internal navigation bar
+              MiniMusicPlayer(
+                tapAction: () {
+                  Navigator.pop(context);
+                },
+              ),
               Obx(
                 () => Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                  padding: const EdgeInsets.only(
+                      top: 3, left: 20, right: 20, bottom: 10),
                   color: lightBlack,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -102,18 +112,51 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
                 ),
               ),
               const SizedBox(height: 20),
-              // Main body content based on selected index
-              Expanded(
+              Flexible(
+                fit: FlexFit.loose,
                 child: Obx(() {
                   switch (selectedIndex.value) {
                     case 0:
-                      return _build_upNext_state();
+                      return GestureDetector(
+                          onHorizontalDragEnd: (DragEndDetails details) {
+                            if (details.primaryVelocity! < 0) {
+                              // Swiped right
+                              selectedIndex.value = 1;
+                            }
+                          },
+                          child: UpcomingSongDetails());
                     case 1:
-                      return controller.isSyncedLrc.value
-                          ? _build_synced_lyrics_state()
-                          : _build_normal_lyrics_state();
+                      return GestureDetector(
+                        onHorizontalDragEnd: (DragEndDetails details) {
+                          if (details.primaryVelocity! < 0) {
+                            // Swiped Right
+                            selectedIndex.value = 2;
+                          } else if (details.primaryVelocity! > 0) {
+                            //Swiped left
+                            selectedIndex.value = 0;
+                          }
+                        },
+                        child: Obx(() {
+                          msg("Lyrics screen selected \n Synced: ${controller.isSyncedLyrics.value}",
+                              tag: 'Lyrics Screen builder');
+                          if (controller.isSyncedLyrics.value) {
+                            return SyncedLyricsScreen(
+                                rawLyrics: controller.lyrics.value);
+                          } else {
+                            return NormalLyricsScreen(
+                                lyrics: controller.lyrics.value);
+                          }
+                        }),
+                      );
                     case 2:
-                      return _build_details_state();
+                      return GestureDetector(
+                          onHorizontalDragEnd: (DragEndDetails details) {
+                            if (details.primaryVelocity! > 0) {
+                              // Swiped Right
+                              selectedIndex.value = 1;
+                            }
+                          },
+                          child: SongDetailsScreen());
                     default:
                       return Container();
                   }
@@ -130,26 +173,26 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
     final isSelected = selectedIndex.value == index;
     return GestureDetector(
       onTap: () {
-        selectedIndex.value = index; // Update the selected index
+        selectedIndex.value = index;
       },
       onHorizontalDragEnd: (DragEndDetails details) {
         if (details.primaryVelocity! < 0) {
-          // Swiped Left - Next Song
           selectedIndex.value = index == 2 ? index : index + 1;
         } else if (details.primaryVelocity! > 0) {
-          // Swiped Right - Previous Song
           selectedIndex.value = index == 0 ? index : index - 1;
         }
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: whiteColor,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              fontSize: isSelected ? 18 : 15,
+          FittedBox(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: whiteColor,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: isSelected ? 24 : 20,
+              ),
             ),
           ),
           if (isSelected)
@@ -162,85 +205,5 @@ mixin MusicPlayerBottomNav implements MiniPlayer, SongListBuilders {
         ],
       ),
     );
-  }
-
-  Widget _build_upNext_state() {
-    final songList = controller.songs;
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      itemCount: songList.length,
-      itemBuilder: (BuildContext context, int index) {
-        return buildSongItem(
-            songs: songList, index: index, isUpcomingList: true);
-      },
-    );
-  }
-
-  Widget _build_synced_lyrics_state() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, left: 12, right: 8, bottom: 8),
-      child: Obx(() {
-        return ListView.builder(
-          itemCount: controller.lyricsLines.length,
-          itemBuilder: (context, index) {
-            final isActive = index == controller.currentLineIndex.value;
-            final line = controller.lyricsLines[index];
-            return Text(
-              line.lyrics,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isActive ? 18 : 16,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                color: isActive ? Colors.blueAccent : Colors.white,
-              ),
-            );
-          },
-        );
-      }),
-    );
-  }
-
-  Widget _build_normal_lyrics_state() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8, left: 12, right: 8, bottom: 8),
-      child: Obx(() {
-        return ListView.builder(
-          itemCount: controller.lyricsLines.length,
-          itemBuilder: (context, index) {
-            return Text(
-              controller.lyricsLines[index].lyrics,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.normal,
-                color: Colors.white,
-              ),
-            );
-          },
-        );
-      }),
-    );
-  }
-
-  Widget _build_details_state() {
-    return const Center(
-      child: Text("Inside Details",
-          style: TextStyle(color: whiteColor, fontSize: 18)),
-    );
-  }
-
-  String _getFormattedDuration(int? duration) {
-    if (duration == null) return '0:00';
-
-    final durationInSeconds = duration ~/ 1000;
-    final hours = (durationInSeconds ~/ 3600).toString().padLeft(2, '0');
-    final minutes =
-        ((durationInSeconds % 3600) ~/ 60).toString().padLeft(2, '0');
-    final seconds = (durationInSeconds % 60).toString().padLeft(2, '0');
-
-    if (hours == "00") {
-      return '$minutes:$seconds';
-    }
-    return '$hours:$minutes:$seconds';
   }
 }

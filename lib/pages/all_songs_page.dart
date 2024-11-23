@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/builders/song_list_builders.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
+import 'package:thunder_audio_player/helpers/filter_songs_mixin.dart';
 import 'package:thunder_audio_player/utils/loggers.dart';
 
 class AllSongsPage extends StatefulWidget {
@@ -12,7 +13,11 @@ class AllSongsPage extends StatefulWidget {
 }
 
 class _AllSongsPageState extends State<AllSongsPage>
-    with SongListBuilders, AutomaticKeepAliveClientMixin {
+    with
+        SongListBuilders,
+        AutomaticKeepAliveClientMixin,
+        SingleTickerProviderStateMixin,
+        FilterSongsMixin {
   final OnAudioQuery audioQuery = OnAudioQuery();
 
   List<SongModel> songList = [];
@@ -30,6 +35,7 @@ class _AllSongsPageState extends State<AllSongsPage>
 
   Future<void> _loadSongs() async {
     songList = await _getSongList();
+    songList = await getFilteredSongList(songList);
     msg('Songs loaded: ${songList.length}', tag: 'AllSongsPage');
     isLoading = false;
     setState(() {});

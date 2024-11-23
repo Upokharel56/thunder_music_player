@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/builders/song_list_builders.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
+import 'package:thunder_audio_player/helpers/filter_songs_mixin.dart';
 
 enum AudioModelType {
   album,
@@ -24,7 +25,8 @@ class InsideScreen extends StatefulWidget {
   State<InsideScreen> createState() => _InsideScreenState();
 }
 
-class _InsideScreenState extends State<InsideScreen> with SongListBuilders {
+class _InsideScreenState extends State<InsideScreen>
+    with SongListBuilders, FilterSongsMixin {
   final OnAudioQuery audioQuery = OnAudioQuery();
   List<SongModel> songList = [];
   late AudiosFromType queryType;
@@ -57,6 +59,9 @@ class _InsideScreenState extends State<InsideScreen> with SongListBuilders {
         sortType: SongSortType.TITLE,
         orderType: OrderType.ASC_OR_SMALLER,
       );
+
+      results = await getFilteredSongList(results);
+
       setState(() {
         songList = results;
       });
