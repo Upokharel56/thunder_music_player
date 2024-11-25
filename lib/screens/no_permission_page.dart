@@ -11,6 +11,16 @@ class NoPermissionPage extends StatefulWidget {
 
 class _NoPermissionPageState extends State<NoPermissionPage> {
   @override
+  void initState() async {
+    // TODO: implement initState
+    super.initState();
+    bool status = await Utils.requestPermission();
+    if (status) {
+      Navigator.pushReplacementNamed(context, "/homepage");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,

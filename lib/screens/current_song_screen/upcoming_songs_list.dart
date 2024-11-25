@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:thunder_audio_player/controllers/music_controller.dart';
 import 'package:thunder_audio_player/builders/song_list_builders.dart'
     show SongListBuilders;
+import 'package:thunder_audio_player/controllers/music_controller.dart';
 
 class UpcomingSongDetails extends StatelessWidget with SongListBuilders {
   UpcomingSongDetails({super.key});

@@ -12,26 +12,28 @@ class FavouriteSongsController extends GetxController {
   void onInit() {
     super.onInit();
     // Load the initial list of favorite songs from storage
-    favouriteSongs.value = box.read<List<SongModel>>('songs') ?? [];
+    List<dynamic> storedSongs = box.read<List<dynamic>>('songs') ?? [];
+    favouriteSongs.value =
+        storedSongs.map((e) => SongModel(e as Map<String, dynamic>)).toList();
   }
 
   bool contains(int songId) {
-    var result =
-        favouriteSongs.where((element) => element.id == songId).toList();
-
-    if (result.isEmpty) {
-      return false;
-    }
-    return true;
+    return favouriteSongs.any((element) => element.id == songId);
   }
 
   void addSong(SongModel song) {
+    if (contains(song.id)) return;
     favouriteSongs.add(song);
-    box.write('songs', favouriteSongs);
+    saveToStorage();
   }
 
   void removeSong(int songId) {
     favouriteSongs.removeWhere((element) => element.id == songId);
-    box.write('songs', favouriteSongs);
+    saveToStorage();
+  }
+
+  void saveToStorage() {
+    // Save the list of favorite songs to storage
+    box.write('songs', favouriteSongs.map((e) => e.getMap).toList());
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:io';
+
 import 'package:audiotagger/audiotagger.dart';
 import 'package:audiotagger/models/tag.dart';
+
 import '../utils/loggers.dart';
 
 class LrcHelper {

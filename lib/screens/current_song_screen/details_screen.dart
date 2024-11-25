@@ -101,12 +101,21 @@ class SongDetailsScreen extends StatelessWidget {
             style: const TextStyle(color: whiteColor, fontSize: 16),
           ),
           const Divider(),
-          const Text(
-            'Date Added:',
+          Text(
+            'Date Added: ${currentSong.dateAdded}',
             style: TextStyle(color: whiteColor, fontSize: 18),
           ),
           Text(
             _getFormattedDate(currentSong.dateAdded ?? 0),
+            style: const TextStyle(color: whiteColor, fontSize: 16),
+          ),
+          const Divider(),
+          Text(
+            'Date Modified: ${currentSong.dateModified}',
+            style: TextStyle(color: whiteColor, fontSize: 18),
+          ),
+          Text(
+            _getFormattedDate(currentSong.dateModified ?? 0),
             style: const TextStyle(color: whiteColor, fontSize: 16),
           ),
           const Divider(),

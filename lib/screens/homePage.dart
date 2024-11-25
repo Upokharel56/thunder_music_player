@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:on_audio_query/on_audio_query.dart';
-import 'package:thunder_audio_player/builders/song_list_builders.dart';
-
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/controllers/music_controller.dart';
-import 'package:thunder_audio_player/pages/all_songs_page.dart';
-import 'package:thunder_audio_player/pages/favourite_page.dart';
-import 'package:thunder_audio_player/pages/genere_page.dart';
 import 'package:thunder_audio_player/controllers/routes_controller.dart';
-import 'package:thunder_audio_player/screens/mini_music_player.dart';
-import 'package:thunder_audio_player/screens/music_player.dart';
-import 'package:thunder_audio_player/utils/loggers.dart';
 import 'package:thunder_audio_player/pages/albums_page.dart';
 import 'package:thunder_audio_player/pages/artists_page.dart';
+import 'package:thunder_audio_player/pages/favourite_page.dart';
+import 'package:thunder_audio_player/pages/genere_page.dart';
+import 'package:thunder_audio_player/screens/mini_music_player.dart';
+import 'package:thunder_audio_player/screens/music_player.dart';
+import 'package:thunder_audio_player/screens/song_list_screen.dart';
 
-class Homepage extends StatefulWidget {
+class Homepage extends StatelessWidget {
   Homepage({super.key});
   final OnAudioQuery audioQuery = OnAudioQuery();
 
@@ -23,19 +20,12 @@ class Homepage extends StatefulWidget {
   final RoutesController routesController = Get.put(RoutesController());
 
   @override
-  State<Homepage> createState() => _HomepageState();
-}
-
-class _HomepageState extends State<Homepage> with SongListBuilders {
-  @override
   Widget build(BuildContext context) {
     return PopScope(
         canPop: true, // or false depending on your needs
         onPopInvokedWithResult: (didPop, result) async {
           // This is where you handle the pop result
-          widget.routesController.goBack();
-          warn("Did pop: $didPop,\n result: $result", tag: 'PopScope');
-          // msg("Did pop: $didPop,\n result: $result");
+          routesController.goBack();
         },
         child: Scaffold(
           backgroundColor: bgColor,
@@ -43,21 +33,23 @@ class _HomepageState extends State<Homepage> with SongListBuilders {
           body: Stack(children: [
             _buildContentBasedOnRoute(),
             Obx(() {
-              return widget.controller.isMiniPlayerActive.value
+              return controller.isMiniPlayerActive.value
                   ? Align(
                       alignment: Alignment.bottomCenter,
                       child: GestureDetector(
                         onVerticalDragUpdate: (details) {
                           if (details.primaryDelta! < -10) {
-                            _showMusicPlayerModal(context,
-                                songs: widget.controller.songs);
+                            // _showMusicPlayerModal(context,
+                            //     songs: controller.songs);
+                            Get.to(MusicPlayer());
                           }
                         },
                         child: MiniMusicPlayer(
                           showDismiss: true,
                           tapAction: () {
-                            _showMusicPlayerModal(context,
-                                songs: widget.controller.songs);
+                            // _showMusicPlayerModal(context,
+                            //     songs: controller.songs);
+                            Get.to(MusicPlayer());
                           },
                         ),
                       ),
@@ -70,7 +62,7 @@ class _HomepageState extends State<Homepage> with SongListBuilders {
 
   Widget _buildContentBasedOnRoute() {
     return Obx(() {
-      switch (widget.routesController.activeLink.value) {
+      switch (routesController.activeLink.value) {
         case 'Favourites':
           return const FavouritePage(); // Replace with actual Favourites widget
         case 'Albums':
@@ -80,40 +72,9 @@ class _HomepageState extends State<Homepage> with SongListBuilders {
         case 'Playlists':
           return const GenresPage(); // Replace with actual Playlists widget
         default:
-          return const AllSongsPage(); // Default to Songs layout
+          return SongListScreen(); // Default to Songs layout
       }
     });
-  }
-
-  Widget _buildSongsLayout() {
-    return FutureBuilder<List<SongModel>>(
-        future: widget.audioQuery.querySongs(
-          ignoreCase: true,
-          orderType: OrderType.ASC_OR_SMALLER,
-          sortType: null,
-          uriType: UriType.EXTERNAL,
-        ),
-        builder: (BuildContext context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          } else if (snapshot.hasError) {
-            return Center(
-              child: Text("Error: ${snapshot.error}"),
-            );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text("No songs found"),
-            );
-          } else {
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: buildSongList(
-                  snapshot: snapshot), // Uses the SongListBuilders mixin
-            );
-          }
-        });
   }
 
   AppBar _buildHomeAppBar() {
@@ -126,8 +87,7 @@ class _HomepageState extends State<Homepage> with SongListBuilders {
     );
   }
 
-  void _showMusicPlayerModal(BuildContext context,
-      {List<SongModel> songs = const []}) {
+  void _showMusicPlayerModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: bgColor,
@@ -139,10 +99,7 @@ class _HomepageState extends State<Homepage> with SongListBuilders {
         return DraggableScrollableSheet(
           expand: false,
           initialChildSize: 0.98,
-          builder: (_, scrollController) => MusicPlayer(
-            data: songs,
-            scrollController: scrollController,
-          ),
+          builder: (_, scrollController) => MusicPlayer(),
         );
       },
     );
@@ -169,14 +126,14 @@ class _HomepageState extends State<Homepage> with SongListBuilders {
   Widget _buildNavLink(String title, String route) {
     return TextButton(
       onPressed: () {
-        widget.routesController.setActiveLink(title);
+        routesController.setActiveLink(title);
         // Navigator.pushNamed(context, route);
       },
       child: Text(
         title,
         style: TextStyle(
           fontSize: 18,
-          color: widget.routesController.activeLink.value == title
+          color: routesController.activeLink.value == title
               ? Colors.green
               : Colors.white,
         ),

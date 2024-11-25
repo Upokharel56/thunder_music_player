@@ -27,7 +27,9 @@ This app is a personal project aimed at learning Flutter and exploring the excit
 - **Packages Used**:  
   - `on_audio_query` for fetching local audio files.  
   - `audio_service` and `just_audio` for playback and media controls.  
+  - `just_audio_background` for playback notification integration.
   - `GetX` for state management and route handling.  
+
 
 ---
 
@@ -35,7 +37,7 @@ This app is a personal project aimed at learning Flutter and exploring the excit
 
 1. Clone the repository:  
    ```bash  
-   git clone https://github.com/<your-username>/flutter-music-player.git  
+   git clone https://github.com/Upokharel56/thunder_music_player.git  
    cd flutter-music-player  
    ```  
 
@@ -69,6 +71,8 @@ This project is part of my journey to:
 - **No iOS Support (yet)**: Currently designed for Android only.  
 - **UI Improvements**: Still experimenting with design patterns and layouts.  
 
+I created this app just for learning and exploring so I will say it may not be a best app . So fell free to critise it and give any feedback if necessary 
+
 ---
 
 ## 🌟 Future Plans  
@@ -78,6 +82,7 @@ This project is part of my journey to:
 - Expand to iOS with platform-specific features.  
 - Add a dark mode for better user experience.  
 - Integrate online streaming support in the future.  
+
 
 ---
 
@@ -93,8 +98,8 @@ This app is a personal learning project, but contributions, suggestions, and fee
 ## 📬 Contact  
 
 Feel free to reach out if you have any feedback, questions, or just want to say hi!  
-- **Email**: [razzacharya6@gmail.com](mailto:razzacharya6@gmail.com)  
-- **GitHub**: [Your GitHub Profile](https://github.com/your-username)  
+- **Email**: [razzacharya6@gmail.com](mailto:iamgroot56u+collab@gmail.com)  
+- **GitHub**: [Your GitHub Profile](https://github.com/Upokharel56/)  
 
 ---
 

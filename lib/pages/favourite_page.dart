@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get_storage/get_storage.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:thunder_audio_player/consts/colors.dart';
 import 'package:thunder_audio_player/controllers/storage/favouraite_songs_controller.dart';
@@ -8,7 +7,6 @@ import 'package:thunder_audio_player/pages/favouraites_songs_page.dart';
 import 'package:thunder_audio_player/screens/song_list_screen.dart';
 // import 'package:thunder_audio_player/helpers/filter_songs_mixin.dart';
 // import 'package:thunder_audio_player/platform_channels/android/song_fetcher.dart';
-import 'package:thunder_audio_player/utils/loggers.dart';
 
 class FavouritePage extends StatefulWidget {
   const FavouritePage({super.key});

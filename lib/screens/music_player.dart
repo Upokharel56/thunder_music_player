@@ -9,13 +9,13 @@ import 'package:thunder_audio_player/pages/inside_screen.dart';
 import 'package:thunder_audio_player/screens/music_player_bottom_nav.dart';
 
 class MusicPlayer extends StatelessWidget with SongListBuilders {
-  final List<SongModel> data;
+  // List<SongModel> controller.songs
   final ScrollController? scrollController;
 
   final FavouriteSongsController favController =
       Get.find<FavouriteSongsController>();
 
-  MusicPlayer({super.key, required this.data, this.scrollController});
+  MusicPlayer({super.key, this.scrollController});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +23,7 @@ class MusicPlayer extends StatelessWidget with SongListBuilders {
       backgroundColor: bgColor,
       appBar: _buildPlayerAppBar(),
       body: _build_body(),
-      bottomNavigationBar: const MusicPlayerBottomNav(),
+      bottomNavigationBar: MusicPlayerBottomNav(),
     );
   }
 
@@ -94,7 +94,7 @@ class MusicPlayer extends StatelessWidget with SongListBuilders {
             color: blackColor,
           ),
           child: QueryArtworkWidget(
-            id: data[controller.currentIndex.value].id,
+            id: controller.songs[controller.currentIndex.value].id,
             artworkQuality: FilterQuality.high,
             format: ArtworkFormat.PNG,
             type: ArtworkType.AUDIO,
@@ -113,7 +113,7 @@ class MusicPlayer extends StatelessWidget with SongListBuilders {
       children: [
         Obx(
           () => AutoSizeText(
-            data[controller.currentIndex.value].displayNameWOExt,
+            controller.songs[controller.currentIndex.value].displayNameWOExt,
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -124,7 +124,8 @@ class MusicPlayer extends StatelessWidget with SongListBuilders {
         ),
         Obx(
           () => AutoSizeText(
-            data[controller.currentIndex.value].artist ?? "Unknown Artist",
+            controller.songs[controller.currentIndex.value].artist ??
+                "Unknown Artist",
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -177,8 +178,13 @@ class MusicPlayer extends StatelessWidget with SongListBuilders {
             triggerMode: TooltipTriggerMode.longPress,
             child: IconButton(
               onPressed: () {
-                favController
-                    .addSong(controller.songs[controller.currentIndex.value]);
+                if (!isFav) {
+                  favController
+                      .addSong(controller.songs[controller.currentIndex.value]);
+                } else {
+                  favController.removeSong(
+                      controller.songs[controller.currentIndex.value].id);
+                }
               },
               icon: Icon(
                 Icons.favorite_border,
